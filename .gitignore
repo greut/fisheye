@@ -1,3 +1,6 @@
+# Vim
+.*.sw[op]
+
 # Compiled Object files
 *.slo
 *.lo
