@@ -164,10 +164,21 @@ Bitmap *loadBitmap(const char *fname)
 int saveBitmap(const char *fname, Bitmap *bmp)
 {
     FILE *fptr;
+    int y;
     int pitch=(bmp->width*bmp->depth/8+3)&(~3);
-    int bs=bmp->height*pitch, y;
+    int bs=bmp->height*pitch;
     int s=bs+sizeof(BMHeader)+sizeof(BMInfo)+(bmp->depth==8?1024:0);
-    BMHeader head={'B','M',s&0xff,(s>>8)&0xff,(s>>16)&0xff,(s>>24)&0xff,0,0,0,0,sizeof(BMHeader)+sizeof(BMInfo),(bmp->depth==8?4:0),0,0};
+    BMHeader head={
+        'B', 'M',
+        (unsigned char) (s&0xff),
+        (unsigned char) ((s>>8)&0xff),
+        (unsigned char) ((s>>16)&0xff),
+        (unsigned char) ((s>>24)&0xff),
+        0,0,0,0,
+        sizeof(BMHeader)+sizeof(BMInfo),
+        (unsigned char) ((bmp->depth == 8 ? 4 : 0)),
+        0,0
+    };
     BMInfo info;
 
     if((fptr=fopen(fname,"wb")) == NULL)
@@ -210,7 +221,6 @@ int saveBitmap(const char *fname, Bitmap *bmp)
             fwrite(&c,4,1,fptr);
         }
     }
-
 
     // Write bitplane
     for(y=0;y<bmp->height;y++)
