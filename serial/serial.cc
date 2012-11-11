@@ -6,22 +6,15 @@
 #define BYTE 8
 #define COLORS 3
 
-
 // Cartesian to Polar conversion
 //
 // +------------------------------------> X
 // |                   | a = Pi/2
 // |                   |
 // |                   |
-// |                   |
-// |                   |
-// |                   |
 // |                   |O (width/2, height/2)
 // |-------------------+-----------------
 // |                   |               angle = 0
-// |                   |
-// |                   |
-// |                   |
 // |                   |
 // |                   |
 // v
@@ -127,32 +120,44 @@ main(int argc, const char** argv) {
         width = src->width * COLORS;
     double radius = (src->height < src->width ? src->height : src->width) * .4,
            m = 5.0;
+    unsigned char *data, *data0, *data1;
     for (y=0; y < height; y++) {
         c->y = (double) y;
         unsigned char *to = &(dst->data[y * width]);
-        unsigned char *data; 
+        data = &(src->data[y * width]);
         for (x=0; x < width; x+=COLORS) {
             c->x = x / (double) COLORS;
             polar_t *p = geometry_polar_from_point(&g, c);
             if (p->r < radius) {
                 polar_t *np = unmagnify(p, radius, m);
                 point_t *nc = geometry_point_from_polar(&g, np);
-                //printf("(%.1f; %.1f) ", c->x, c->y);
-                //printf("[%.1f, %.1f] ", p->r, p->a);
-                //printf("[%.1f, %.1f] ", np->r, np->a);
-                //printf("(%.1f; %.1f)\n", nc->x, nc->y);
-
-                // TODO: billinear interpolation
-                int nx = round(nc->x), ny = round(nc->y);
-                data = &(src->data[ny * width]);
+                int nx = floor(nc->x),
+                    ny = floor(nc->y);
+                double dx = nc->x - nx, dy = nc->y - ny,
+                       r0, g0, b0,
+                       r1, g1, b1,
+                       r, g, b;
                 nx *= COLORS;
-                to[x] = data[nx] ^ 0x00;    // R
-                to[x+1] = data[nx+1] ^ 0x00; // G
-                to[x+2] = data[nx+2] ^ 0x00; // B
+                // rows
+                data0 = &(src->data[ny * width]);
+                data1 = &(src->data[(ny + 1) * width]);
+                // intermediary points
+                r0 = (1 - dx) * data0[nx] + dx * data0[nx + 3];
+                g0 = (1 - dx) * data0[nx + 1] + dx * data0[nx + 4];
+                b0 = (1 - dx) * data0[nx + 2] + dx * data0[nx + 5];
+                r1 = (1 - dx) * data1[nx] + dx * data1[nx + 3];
+                g1 = (1 - dx) * data1[nx + 1] + dx * data1[nx + 4];
+                b1 = (1 - dx) * data1[nx + 2] + dx * data1[nx + 5];
+                // final points
+                r = (1 - dy) * r0 + dy * r1;
+                g = (1 - dy) * g0 + dy * g1;
+                b = (1 - dy) * b0 + dy * b1;
+                to[x] = r;
+                to[x+1] = g;
+                to[x+2] = b;
                 free(nc);
                 free(np);
             } else {
-                data = &(src->data[y * width]);
                 to[x] = data[x];
                 to[x+1] = data[x+1];
                 to[x+2] = data[x+2];
@@ -164,90 +169,7 @@ main(int argc, const char** argv) {
 
     if (saveBitmap(argv[2], dst) == 0) {
         std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
+        return 1;
     }
     return 0;
 }
-
-/* TEST
-
-int main2(void) {
-    geometry_t g = {100, 100, {50, 50}};
-    point_t *c, *nc;
-    polar_t *p;
-
-    c = point_new(100, 0);
-    p = geometry_polar_from_point(&g, c);
-    nc = geometry_point_from_polar(&g, p);
-    printf("((%.1f; %.1f) -> (%.1f; %.1f) -> (%.1f; %.1f)\n",
-        c->x, c->y, p->r, p->a, nc->x, nc->y);
-    free(nc);
-    free(p);
-    free(c);
-
-    c = point_new(50, 0);
-    p = geometry_polar_from_point(&g, c);
-    nc = geometry_point_from_polar(&g, p);
-    printf("((%.1f; %.1f) -> (%.1f; %.1f) -> (%.1f; %.1f)\n",
-        c->x, c->y, p->r, p->a, nc->x, nc->y);
-    free(nc);
-    free(p);
-    free(c);
-
-    c = point_new(0, 0);
-    p = geometry_polar_from_point(&g, c);
-    nc = geometry_point_from_polar(&g, p);
-    printf("((%.1f; %.1f) -> (%.1f; %.1f) -> (%.1f; %.1f)\n",
-        c->x, c->y, p->r, p->a, nc->x, nc->y);
-    free(nc);
-    free(p);
-    free(c);
-
-    c = point_new(0, 50);
-    p = geometry_polar_from_point(&g, c);
-    nc = geometry_point_from_polar(&g, p);
-    printf("((%.1f; %.1f) -> (%.1f; %.1f) -> (%.1f; %.1f)\n",
-        c->x, c->y, p->r, p->a, nc->x, nc->y);
-    free(nc);
-    free(p);
-    free(c);
-
-    c = point_new(0, 100);
-    p = geometry_polar_from_point(&g, c);
-    nc = geometry_point_from_polar(&g, p);
-    printf("((%.1f; %.1f) -> (%.1f; %.1f) -> (%.1f; %.1f)\n",
-        c->x, c->y, p->r, p->a, nc->x, nc->y);
-    free(nc);
-    free(p);
-    free(c);
-
-    c = point_new(50, 100);
-    p = geometry_polar_from_point(&g, c);
-    nc = geometry_point_from_polar(&g, p);
-    printf("((%.1f; %.1f) -> (%.1f; %.1f) -> (%.1f; %.1f)\n",
-        c->x, c->y, p->r, p->a, nc->x, nc->y);
-    free(nc);
-    free(p);
-    free(c);
-
-    c = point_new(100, 100);
-    p = geometry_polar_from_point(&g, c);
-    nc = geometry_point_from_polar(&g, p);
-    printf("((%.1f; %.1f) -> (%.1f; %.1f) -> (%.1f; %.1f)\n",
-        c->x, c->y, p->r, p->a, nc->x, nc->y);
-    free(nc);
-    free(p);
-    free(c);
-
-
-    c = point_new(100, 50);
-    p = geometry_polar_from_point(&g, c);
-    nc = geometry_point_from_polar(&g, p);
-    printf("((%.1f; %.1f) -> (%.1f; %.1f) -> (%.1f; %.1f)\n",
-        c->x, c->y, p->r, p->a, nc->x, nc->y);
-    free(nc);
-    free(p);
-    free(c);
-
-    return 0;
-}
-*/
