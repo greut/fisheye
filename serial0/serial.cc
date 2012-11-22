@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 #include "lspbmp.h"
 
 #define BYTE 8
@@ -109,8 +110,11 @@ main(int argc, const char** argv) {
         std::cerr << "Usage: " << argv[0] << " source dest"<< std::endl;
         return 1;
     }
+    clock_t t0 = clock();
     Bitmap* src = loadBitmap(argv[1]);
+    clock_t t1 = clock();
     Bitmap* dst = createBitmap(src->width, src->height, 24);
+    clock_t t2 = clock();
     geometry_t g = {
         src->width, src->height,
         {round(src->width/2.), round(src->height/2.)}};
@@ -165,11 +169,20 @@ main(int argc, const char** argv) {
             free(p);
         }
     }
+    clock_t t3 = clock();
+    clock_t saved = saveBitmap(argv[2], dst);
     free(c);
+    clock_t t4 = clock();
 
-    if (saveBitmap(argv[2], dst) == 0) {
+    if (!saved) {
         std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
-        return 1;
+    } else {
+        std::cout << argv[1] << "\t";
+        std::cout << double(t4-t0)/CLOCKS_PER_SEC << "\t";
+        std::cout << double(t1-t0)/CLOCKS_PER_SEC << "\t";
+        std::cout << double(t2-t1)/CLOCKS_PER_SEC << "\t";
+        std::cout << double(t3-t2)/CLOCKS_PER_SEC << "\t";
+        std::cout << double(t4-t3)/CLOCKS_PER_SEC << std::endl;
     }
-    return 0;
+    return saved;
 }
