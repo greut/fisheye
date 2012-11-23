@@ -2,9 +2,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <stdio.h> 
-#include <string.h> 
-#include <malloc.h> 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "lspbmp.h"
 
 /** Bitmap file header */
@@ -108,7 +108,7 @@ Bitmap *loadBitmap(const char *fname)
     w=nf.w0+(nf.w1<<8)+(nf.w2<<16)+(nf.w3<<24);
     h=nf.h0+(nf.h1<<8)+(nf.h2<<16)+(nf.h3<<24);
 
-    out=(Bitmap*)malloc(sizeof(Bitmap)*w*h*(mode==0?3:1)+3);
+    out=(Bitmap*)calloc(sizeof(Bitmap), w*h*(mode==0?3:1)+3);
     out->width=w;
     out->height=h;
     out->depth=mode==0?24:8;
@@ -157,6 +157,7 @@ Bitmap *loadBitmap(const char *fname)
                 fgetc(fptr);
         }
     }
+    fclose(fptr);
     return out;
 }
 
@@ -235,7 +236,7 @@ int saveBitmap(const char *fname, Bitmap *bmp)
 /** Create bitmap from scratch */
 Bitmap *createBitmap(int w, int h, int d)
 {
-    Bitmap *out=(Bitmap*)malloc(sizeof(Bitmap) + w*h*d/8+3);
+    Bitmap *out=(Bitmap*)calloc(sizeof(Bitmap), w*h*d/8+3);
     out->width=w;
     out->height=h;
     out->depth=d;
