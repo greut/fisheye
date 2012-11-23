@@ -27,17 +27,17 @@
 // (dy, dx) \  |  / (-dy , dx)
 //           \ | /
 // ------------+--------------> X
-//           / | \
-// (dy, -dx)/  |  \ (-dy, -dx)
-//         /   |   \
-//     O  /    |    \   O
-//  X    /     |     \     X
-//      /  O   |   O  \
-//     /       |       \
-//    /  X     |    X   \
-//   /         |         \
-//  /          |          \
-// / (dx, -dy) | (-dx, -dy) \
+//           / | \                  .
+// (dy, -dx)/  |  \ (-dy, -dx)      .
+//         /   |   \                .
+//     O  /    |    \   O           .
+//  X    /     |     \     X        .
+//      /  O   |   O  \             .
+//     /       |       \            .
+//    /  X     |    X   \           .
+//   /         |         \          .
+//  /          |          \         .
+// / (dx, -dy) | (-dx, -dy)\        .
 //             v
 //
 //             Y
@@ -163,15 +163,15 @@ main(int argc, const char** argv) {
         sizeof(double),
         src->width * src->height * 2);
     Bitmap* dst = createBitmap(src->width, src->height, 24);
-    clock_t t2 = clock();
     fisheye_mask(mask, src->width, src->height);
+    clock_t t2 = clock();
     fisheye_from_mask(dst, src, mask);
     clock_t t3 = clock();
     clock_t saved = saveBitmap(argv[2], dst);
-    clock_t t4 = clock();
     free(mask);
     free(dst);
     free(src);
+    clock_t t4 = clock();
 
     if (!saved) {
         std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
