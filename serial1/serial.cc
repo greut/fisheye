@@ -48,7 +48,7 @@ void fisheye_mask(double * mask, int width, int height) {
         {round(width/2.), round(height/2.)}};
     point_t *c = point_new(0., 0.);
     int x, y;
-    double radius = (height < width ? height : width) * .4,
+    double radius = (height < width ? height : width) * .45,
            m = 5.0,
            dx, dy;
     // Pre calculate the new position

@@ -6,7 +6,7 @@
 #include "magnify.h"
 
 #define COLORS 3
-// http://stackoverflow.com/questions/3437404/min-and-max-in-c 
+// http://stackoverflow.com/questions/3437404/min-and-max-in-c
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -55,11 +55,15 @@ void fisheye_square_mask(double * mask, int width, double r, double m) {
     };
     point_t *c = point_new(0., 0.), *nc;
     polar_t *p, *np;
-    int x, y, height = width;
+    int x, y, ycol, xcol, wx, wy, wxcol, wycol;
     double dx, dy;
     // Pre calculate the new position
     for (y=0; y <= radius; y++) {
         c->y = y;
+        wy = width - y;
+        ycol = y * width * 2;
+        wycol = wy * width * 2;
+        wy *= 2;
         for (x = y; x <= radius; x++) {
             c->x = x;
             p = geometry_polar_from_point(&g, c);
@@ -70,30 +74,34 @@ void fisheye_square_mask(double * mask, int width, double r, double m) {
                 dy = nc->y - y; // nc->y = y + dy
                 free(nc);
                 free(np);
+                wx = width - x;
+                xcol = x * width * 2;
+                wxcol = wx * width * 2;
+                wx *= 2;
                 // 0
-                mask[y * width * 2 + x * 2] = dx;
-                mask[y * width * 2 + x * 2 + 1] = dy;
+                mask[ycol + x * 2] = dx;
+                mask[ycol + x * 2 + 1] = dy;
                 // 7
-                mask[y * width * 2 + (width - x) * 2] = -dx;
-                mask[y * width * 2 + (width - x) * 2 + 1] = dy;
+                mask[ycol + wx] = -dx;
+                mask[ycol + wx + 1] = dy;
                 // 3
-                mask[(height - y) * width * 2 + x * 2] = dx;
-                mask[(height - y) * width * 2 + x * 2 + 1] = -dy;
+                mask[wycol + x * 2] = dx;
+                mask[wycol + x * 2 + 1] = -dy;
                 // 4
-                mask[(height - y) * width * 2 + (width - x) * 2] = -dx;
-                mask[(height - y) * width * 2 + (width - x) * 2 + 1] = -dy;
+                mask[wycol + wx] = -dx;
+                mask[wycol + wx + 1] = -dy;
                 // 1
-                mask[x * width * 2 + y * 2] = dy;
-                mask[x * width * 2 + y * 2 + 1] = dx;
+                mask[xcol + y * 2] = dy;
+                mask[xcol + y * 2 + 1] = dx;
                 // 6
-                mask[x * width * 2 + (width - y) * 2] = -dy;
-                mask[x * width * 2 + (width - y) * 2 + 1] = dx;
+                mask[xcol + wy] = -dy;
+                mask[xcol + wy + 1] = dx;
                 // 3
-                mask[(height - x) * width * 2 + y * 2] = dy;
-                mask[(height - x) * width * 2 + y * 2 + 1] = -dx;
+                mask[wxcol + y * 2] = dy;
+                mask[wxcol + y * 2 + 1] = -dx;
                 // 4
-                mask[(height - x) * width * 2 + (width - y) * 2] = -dy;
-                mask[(height - x) * width * 2 + (width - y) * 2 + 1] = -dx;
+                mask[wxcol + wy] = -dy;
+                mask[wxcol + wy + 1] = -dx;
             }
             free(p);
         }
@@ -168,13 +176,14 @@ main(int argc, const char** argv) {
     clock_t t0 = clock();
     Bitmap* src = loadBitmap(argv[1]);
     clock_t t1 = clock();
-    double radius = (src->height < src->width ? src->height : src->width) * .4,
+    double radius = (src->height < src->width ? src->height : src->width) * .45,
            magnify_factor = 5.0;
+    unsigned int mask_width = ceil(2 * radius);
     double *mask = (double *) calloc(
         sizeof(double),
-        radius * radius * 8); // the square is 2 radius large
+        mask_width * mask_width * 2);
     Bitmap* dst = createBitmap(src->width, src->height, 24);
-    fisheye_square_mask(mask, 2 * radius, radius, magnify_factor);
+    fisheye_square_mask(mask, mask_width, radius, magnify_factor);
     clock_t t2 = clock();
     fisheye_from_square_mask(dst, src, mask, 2*radius);
     clock_t t3 = clock();

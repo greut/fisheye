@@ -15,7 +15,7 @@ fisheye(Bitmap* dst, const Bitmap* src) {
     int x, y, nx, ny,
         height = src->height,
         width = src->width * COLORS;
-    double radius = (src->height < src->width ? src->height : src->width) * .4,
+    double radius = (src->height < src->width ? src->height : src->width) * .45,
            m = 5.0,
            dx, dy, r0, g0, b0, r1, g1, b1, r, g, b;
     const unsigned char *data, *data0, *data1;
