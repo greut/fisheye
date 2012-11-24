@@ -6,7 +6,7 @@
 #include "magnify.h"
 
 #define COLORS 3
-// http://stackoverflow.com/questions/3437404/min-and-max-in-c 
+// http://stackoverflow.com/questions/3437404/min-and-max-in-c
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -55,13 +55,13 @@ void fisheye_square_mask(double * mask, int width, double r, double m) {
     };
     point_t *c = point_new(0., 0.), *nc;
     polar_t *p, *np;
-    int x, y, height = width;
+    int x, y, ycol, xcol, wx, wy, wxcol, wycol;
     double dx, dy;
     // Pre calculate the new position
-    for (y=0; y <= radius; y++) {
-        c->y = y;
-        for (x = y; x <= radius; x++) {
-            c->x = x;
+    for (y=0; y <= width/2; y++) {
+        c->y = (double) y;
+        for (x = y; x <= width/2; x++) {
+            c->x = (double) x;
             p = geometry_polar_from_point(&g, c);
             if (p->r < r) {
                 np = unmagnify(p, r, m);
@@ -70,30 +70,36 @@ void fisheye_square_mask(double * mask, int width, double r, double m) {
                 dy = nc->y - y; // nc->y = y + dy
                 free(nc);
                 free(np);
+                wx = width - x;
+                wy = width - y;
+                ycol = y * width * 2;
+                xcol = x * width * 2;
+                wxcol = wx * width * 2;
+                wycol = wy * width * 2;
                 // 0
-                mask[y * width * 2 + x * 2] = dx;
-                mask[y * width * 2 + x * 2 + 1] = dy;
+                mask[ycol + x * 2] = dx;
+                mask[ycol + x * 2 + 1] = dy;
                 // 7
-                mask[y * width * 2 + (width - x) * 2] = -dx;
-                mask[y * width * 2 + (width - x) * 2 + 1] = dy;
+                mask[ycol + wx * 2] = -dx;
+                mask[ycol + wx * 2 + 1] = dy;
                 // 3
-                mask[(height - y) * width * 2 + x * 2] = dx;
-                mask[(height - y) * width * 2 + x * 2 + 1] = -dy;
+                mask[wycol + x * 2] = dx;
+                mask[wycol + x * 2 + 1] = -dy;
                 // 4
-                mask[(height - y) * width * 2 + (width - x) * 2] = -dx;
-                mask[(height - y) * width * 2 + (width - x) * 2 + 1] = -dy;
+                mask[wycol + wx * 2] = -dx;
+                mask[wycol + wx * 2 + 1] = -dy;
                 // 1
-                mask[x * width * 2 + y * 2] = dy;
-                mask[x * width * 2 + y * 2 + 1] = dx;
+                mask[xcol + y * 2] = dy;
+                mask[xcol + y * 2 + 1] = dx;
                 // 6
-                mask[x * width * 2 + (width - y) * 2] = -dy;
-                mask[x * width * 2 + (width - y) * 2 + 1] = dx;
+                mask[xcol + wy * 2] = -dy;
+                mask[xcol + wy * 2 + 1] = dx;
                 // 3
-                mask[(height - x) * width * 2 + y * 2] = dy;
-                mask[(height - x) * width * 2 + y * 2 + 1] = -dx;
+                mask[wxcol + y * 2] = dy;
+                mask[wxcol + y * 2 + 1] = -dx;
                 // 4
-                mask[(height - x) * width * 2 + (width - y) * 2] = -dy;
-                mask[(height - x) * width * 2 + (width - y) * 2 + 1] = -dx;
+                mask[wxcol + wy * 2] = -dy;
+                mask[wxcol + wy * 2 + 1] = -dx;
             }
             free(p);
         }
@@ -104,21 +110,24 @@ void fisheye_square_mask(double * mask, int width, double r, double m) {
 void
 fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     double dx, dy, idx, idy, r0, g0, b0, r1, g1, b1;
-    int x = c->x * COLORS, nx, ny, width = img->width * COLORS;
+    unsigned int nx, ny,
+        x = c->x * COLORS,
+        width = img->width * COLORS;
     unsigned char *data0, *data1, *to, r, g, b;
-    point_t *nc = point_new(c->x + dv[0], c->y + dv[1]);
+    double cx = c->x + dv[0],
+        cy = c->y + dv[1];
 
-    nx = floor(nc->x);
-    ny = floor(nc->y);
-    dx = nc->x - nx;
-    dy = nc->y - ny;
+    nx = floor(cx);
+    ny = floor(cy);
+    dx = cx - nx;
+    dy = cy - ny;
     idx = 1 - dx;
     idy = 1 - dy;
     nx *= COLORS;
     // rows
     data0 = &(img->data[ny * width]);
     data1 = &(img->data[(ny + 1) * width]);
-    to = &(img->data[(int)c->y * width]);
+    to = &(img->data[(int)(c->y * width)]);
     // intermediary points
     r0 = idx * data0[nx] + dx * data0[nx + 3];
     g0 = idx * data0[nx + 1] + dx * data0[nx + 4];
@@ -133,87 +142,66 @@ fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     to[x] = r;
     to[x + 1] = g;
     to[x + 2] = b;
-
-    free(nc);
 }
 
 void
-fisheye_inplace_from_square_mask(Bitmap* img, const double* mask, double mask_width) {
+fisheye_inplace_from_square_mask(Bitmap* img, const double* mask, unsigned int mask_width) {
     point_t *c = point_new(0., 0.);
-    int x, y, x0, y0,
+    unsigned int x, y, x0, y0,
         width = img->width,
         height = img->height;
     const double* dv;
     x0 = max(0, (width - mask_width)/2);
     y0 = max(0, (height - mask_width)/2);
-    for (y=0; y < height/2; y++) {
-        c->y = (double) y;
-        for (x=0; x <= width/2; x++) {
+    for (y = y0; y < height/2; y++) {
+        c->y = y;
+        for (x = x0; x <= width/2; x++) {
             c->x = x;
-            if (c->x >= x0 && c->y >= y0 &&
-                c->x < x0 + mask_width && c->y < y0 + mask_width) {
-                dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
-                if (dv[0] != 0 || dv[1] != 0) {
-                    fisheye_inplace_sub(img, c, dv);
-                }
+            dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
+            if (dv[0] != 0 || dv[1] != 0) {
+                fisheye_inplace_sub(img, c, dv);
             }
         }
-        for (x=width; x > width/2; x--) {
+        for (x = width - x0; x > width/2; x--) {
             c->x = x;
-            if (c->x >= x0 && c->y >= y0 &&
-                c->x < x0 + mask_width && c->y < y0 + mask_width) {
-                dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
-                if (dv[0] != 0 || dv[1] != 0) {
-                    fisheye_inplace_sub(img, c, dv);
-                }
+            dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
+            if (dv[0] != 0 || dv[1] != 0) {
+                fisheye_inplace_sub(img, c, dv);
             }
         }
     }
-    for (y=height; y > height/2; y--) {
+    for (y = height - y0 - 2; y > height/2; y--) {
         c->y = (double) y;
-        for (x=0; x <= width; x++) {
-            c->x = x;
-            if (c->x >= x0 && c->y >= y0 &&
-                c->x < x0 + mask_width && c->y < y0 + mask_width) {
-                dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
-                if (dv[0] != 0 || dv[1] != 0) {
-                    fisheye_inplace_sub(img, c, dv);
-                }
+        for (x = x0; x < width/2; x++) {
+            c->x = (double) x;
+            dv = &(mask[int(((y - y0) * mask_width + (x - x0)) * 2)]);
+            if (dv[0] != 0 || dv[1] != 0) {
+                fisheye_inplace_sub(img, c, dv);
             }
         }
-        for (x=width; x > width/2; x--) {
-            c->x = x;
-            if (c->x >= x0 && c->y >= y0 &&
-                c->x < x0 + mask_width && c->y < y0 + mask_width) {
-                dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
-                if (dv[0] != 0 || dv[1] != 0) {
-                    fisheye_inplace_sub(img, c, dv);
-                }
+        for (x = width - x0; x > width/2; x--) {
+            c->x = (double) x;
+            dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
+            if (dv[0] != 0 || dv[1] != 0) {
+                fisheye_inplace_sub(img, c, dv);
             }
         }
     }
     c->y = height/2;
-    for (x = 0; x <= width/2; x++) {
+    for (x = x0; x <= width/2; x++) {
         c->x = x;
-        if (c->x >= x0 && c->y >= y0 &&
-            c->x < x0 + mask_width && c->y < y0 + mask_width) {
-            dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
-            if (dv[0] != 0 || dv[1] != 0) {
-                fisheye_inplace_sub(img, c, dv);
-            }
+        dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
+        if (dv[0] != 0 || dv[1] != 0) {
+            fisheye_inplace_sub(img, c, dv);
         }
     }
-    for (x = width; x > width/2; x--) {
+    for (x = width - x0; x > width/2; x--) {
         c->x = x;
-        if (c->x >= x0 && c->y >= y0 &&
-            c->x < x0 + mask_width && c->y < y0 + mask_width) {
-            dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
-            if (dv[0] != 0 || dv[1] != 0) {
-                fisheye_inplace_sub(img, c, dv);
-            }
+        dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
+        if (dv[0] != 0 || dv[1] != 0) {
+            fisheye_inplace_sub(img, c, dv);
         }
     }
-
     free(c);
 }
 
@@ -228,12 +216,13 @@ main(int argc, const char** argv) {
     clock_t t1 = clock();
     double radius = (img->height < img->width ? img->height : img->width) * .4,
            magnify_factor = 5.0;
+    unsigned int mask_width = ceil(2 * radius);
     double *mask = (double *) calloc(
         sizeof(double),
-        radius * radius * 8); // the square is 2 radius large
-    fisheye_square_mask(mask, 2 * radius, radius, magnify_factor);
+        mask_width * mask_width * 2);
+    fisheye_square_mask(mask, mask_width, radius, magnify_factor);
     clock_t t2 = clock();
-    fisheye_inplace_from_square_mask(img, mask, 2*radius);
+    fisheye_inplace_from_square_mask(img, mask, mask_width);
     clock_t t3 = clock();
     clock_t saved = saveBitmap(argv[2], img);
     free(mask);
