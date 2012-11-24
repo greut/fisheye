@@ -88,7 +88,7 @@ main(int argc, const char** argv) {
         std::cout << argv[1] << "\t";
         std::cout << double(t3-t0)/CLOCKS_PER_SEC << "\t";
         std::cout << double(t1-t0)/CLOCKS_PER_SEC << "\t";
-        std::cout << double(t2-t1)/CLOCKS_PER_SEC << "\t";
+        std::cout << double(t2-t1)/CLOCKS_PER_SEC << "\t\t";
         std::cout << double(t3-t2)/CLOCKS_PER_SEC << std::endl;
     }
     return saved;

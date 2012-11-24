@@ -47,7 +47,6 @@
 //             Y
 
 void fisheye_square_mask(double * mask, int width, double r, double m) {
-    int radius = ceil(r);
     geometry_t g = {
         width,
         width,
