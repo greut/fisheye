@@ -54,8 +54,6 @@ void fisheye_mask(double * mask, int width, int height) {
     // Pre calculate the new position
     for (y=0; y <= ceil(height / 2.); y++) {
         c->y = y;
-        // FIXME: DOESN'T WORK THAT WELL WITH NON-SQUARISH PICTURES!!
-        //for (x = (y * src->width / height); x <= ceil(src->width / 2.); x++) {
         for (x = 0; x <= ceil(width / 2.); x++) {
             c->x = x;
             polar_t *p = geometry_polar_from_point(&g, c);
@@ -69,29 +67,15 @@ void fisheye_mask(double * mask, int width, int height) {
                 // 0
                 mask[y * width * 2 + x * 2] = dx;
                 mask[y * width * 2 + x * 2 + 1] = dy;
-                // 7
+                // 3
                 mask[y * width * 2 + (width - x) * 2] = -dx;
                 mask[y * width * 2 + (width - x) * 2 + 1] = dy;
-                // 3
+                // 1
                 mask[(height - y) * width * 2 + x * 2] = dx;
                 mask[(height - y) * width * 2 + x * 2 + 1] = -dy;
-                // 4
+                // 2
                 mask[(height - y) * width * 2 + (width - x) * 2] = -dx;
                 mask[(height - y) * width * 2 + (width - x) * 2 + 1] = -dy;
-                /*
-                // 1
-                mask[x * width * 2 + y * 2] = dy;
-                mask[x * width * 2 + y * 2 + 1] = dx;
-                // 6
-                mask[x * width * 2 + (width - y) * 2] = -dy;
-                mask[x * width * 2 + (width - y) * 2 + 1] = dx;
-                // 3
-                mask[(height - x) * width * 2 + y * 2] = dy;
-                mask[(height - x) * width * 2 + y * 2 + 1] = -dx;
-                // 4
-                mask[(height - x) * width * 2 + (width - y) * 2] = -dy;
-                mask[(height - x) * width * 2 + (width - y) * 2 + 1] = -dx;
-                */
             }
             free(p);
         }
@@ -158,12 +142,14 @@ main(int argc, const char** argv) {
     }
     clock_t t0 = clock();
     Bitmap* src = loadBitmap(argv[1]);
+    int width = src->width,
+        height = src->height;
     clock_t t1 = clock();
     double *mask = (double *) calloc(
         sizeof(double),
-        src->width * src->height * 2);
-    Bitmap* dst = createBitmap(src->width, src->height, 24);
-    fisheye_mask(mask, src->width, src->height);
+        width * height * 2);
+    Bitmap* dst = createBitmap(width, height, 24);
+    fisheye_mask(mask, width, height);
     clock_t t2 = clock();
     fisheye_from_mask(dst, src, mask);
     clock_t t3 = clock();
@@ -177,6 +163,7 @@ main(int argc, const char** argv) {
         std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
     } else {
         std::cout << argv[1] << "\t";
+        std::cout << width * height << "\t";
         std::cout << double(t4-t0)/CLOCKS_PER_SEC << "\t";
         std::cout << double(t1-t0)/CLOCKS_PER_SEC << "\t";
         std::cout << double(t2-t1)/CLOCKS_PER_SEC << "\t";

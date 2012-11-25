@@ -73,8 +73,10 @@ main(int argc, const char** argv) {
     }
     clock_t t0 = clock();
     Bitmap* src = loadBitmap(argv[1]);
+    int width = src->width,
+        height = src->height;
     clock_t t1 = clock();
-    Bitmap* dst = createBitmap(src->width, src->height, 24);
+    Bitmap* dst = createBitmap(width, height, 24);
     fisheye(dst, src);
     clock_t t2 = clock();
     clock_t saved = saveBitmap(argv[2], dst);
@@ -86,6 +88,7 @@ main(int argc, const char** argv) {
         std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
     } else {
         std::cout << argv[1] << "\t";
+        std::cout << width * height << "\t";
         std::cout << double(t3-t0)/CLOCKS_PER_SEC << "\t";
         std::cout << double(t1-t0)/CLOCKS_PER_SEC << "\t";
         std::cout << double(t2-t1)/CLOCKS_PER_SEC << "\t\t";

@@ -148,7 +148,7 @@ fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
 void
 fisheye_inplace_from_square_mask(Bitmap* img, const double* mask, unsigned int mask_width) {
     point_t *c = point_new(0., 0.);
-    unsigned int x, y, x0, y0, zero = 0,
+    unsigned int x, y, x0, y0, yy, zero = 0,
         width = img->width,
         height = img->height;
     const double* dv;
@@ -156,53 +156,41 @@ fisheye_inplace_from_square_mask(Bitmap* img, const double* mask, unsigned int m
     y0 = max(zero, (height - mask_width)/2);
     for (y = y0; y < height/2; y++) {
         c->y = y;
+        yy = (c->y - y0) * mask_width * 2;
         for (x = x0; x <= width/2; x++) {
             c->x = x;
-            dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
+            dv = &(mask[yy + int((c->x - x0) * 2)]);
             if (dv[0] != 0 || dv[1] != 0) {
                 fisheye_inplace_sub(img, c, dv);
             }
         }
         for (x = width - x0; x > width/2; x--) {
             c->x = x;
-            dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
+            dv = &(mask[yy + int((c->x - x0) * 2)]);
             if (dv[0] != 0 || dv[1] != 0) {
                 fisheye_inplace_sub(img, c, dv);
             }
         }
     }
-    for (y = height - y0 - 2; y > height/2; y--) {
+    for (y = height - y0 - 2; y >= height/2; y--) {
         c->y = (double) y;
+        yy = (c->y - y0) * mask_width * 2;
         for (x = x0; x <= width/2; x++) {
             c->x = (double) x;
-            dv = &(mask[int(((y - y0) * mask_width + (x - x0)) * 2)]);
+            dv = &(mask[yy + int((c->x - x0) * 2)]);
             if (dv[0] != 0 || dv[1] != 0) {
                 fisheye_inplace_sub(img, c, dv);
             }
         }
         for (x = width - x0; x > width/2; x--) {
             c->x = (double) x;
-            dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
+            dv = &(mask[yy + int((c->x - x0) * 2)]);
             if (dv[0] != 0 || dv[1] != 0) {
                 fisheye_inplace_sub(img, c, dv);
             }
         }
     }
-    c->y = height/2;
-    for (x = x0; x <= width/2; x++) {
-        c->x = x;
-        dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
-        if (dv[0] != 0 || dv[1] != 0) {
-            fisheye_inplace_sub(img, c, dv);
-        }
-    }
-    for (x = width - x0; x > width/2; x--) {
-        c->x = x;
-        dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
-        if (dv[0] != 0 || dv[1] != 0) {
-            fisheye_inplace_sub(img, c, dv);
-        }
-    }
+
     free(c);
 }
 
@@ -214,8 +202,10 @@ main(int argc, const char** argv) {
     }
     clock_t t0 = clock();
     Bitmap* img = loadBitmap(argv[1]);
+    int width = img->width,
+        height = img->height;
     clock_t t1 = clock();
-    double radius = (img->height < img->width ? img->height : img->width) * .45,
+    double radius = (height < width ? height : width) * .45,
            magnify_factor = 5.0;
     unsigned int mask_width = ceil(2 * radius);
     double *mask = (double *) calloc(
@@ -234,6 +224,7 @@ main(int argc, const char** argv) {
         std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
     } else {
         std::cout << argv[1] << "\t";
+        std::cout << width * height << "\t";
         std::cout << double(t4-t0)/CLOCKS_PER_SEC << "\t";
         std::cout << double(t1-t0)/CLOCKS_PER_SEC << "\t";
         std::cout << double(t2-t1)/CLOCKS_PER_SEC << "\t";
