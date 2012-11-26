@@ -142,13 +142,27 @@ main(int argc, const char** argv) {
     }
     clock_t t0 = clock();
     Bitmap* src = loadBitmap(argv[1]);
-    int width = src->width,
-        height = src->height;
+    if (src == NULL) {
+        std::cerr << "Cannot open " << argv[1] << std::endl;
+        return 1;
+    }
+    unsigned int width = src->width,
+                 height = src->height,
+                 mask_size = width * height * 2;
     clock_t t1 = clock();
-    double *mask = (double *) calloc(
-        sizeof(double),
-        width * height * 2);
+    double *mask = (double *) calloc(sizeof(double), mask_size);
+    if (mask == NULL) {
+        std::cerr << "Cannot allocate mask of size " << mask_size << std::endl;
+        free(src);
+        return 1;
+    }
     Bitmap* dst = createBitmap(width, height, 24);
+    if (dst == NULL) {
+        std::cerr << "Cannot allocate destination picture " << argv[2] << std::endl;
+        free(mask);
+        free(src);
+        return 1;
+    }
     fisheye_mask(mask, width, height);
     clock_t t2 = clock();
     fisheye_from_mask(dst, src, mask);

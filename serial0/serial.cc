@@ -73,10 +73,19 @@ main(int argc, const char** argv) {
     }
     clock_t t0 = clock();
     Bitmap* src = loadBitmap(argv[1]);
-    int width = src->width,
-        height = src->height;
+    if (src == NULL) {
+        std::cerr << "Cannot open " << argv[1] << std::endl;
+        return 1;
+    }
+    unsigned int width = src->width,
+                 height = src->height;
     clock_t t1 = clock();
     Bitmap* dst = createBitmap(width, height, 24);
+    if (dst == NULL) {
+        std::cerr << "Cannot allocate destination picture " << argv[2] << std::endl;
+        free(src);
+        return 1;
+    }
     fisheye(dst, src);
     clock_t t2 = clock();
     clock_t saved = saveBitmap(argv[2], dst);

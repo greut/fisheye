@@ -109,6 +109,9 @@ Bitmap *loadBitmap(const char *fname)
     h=nf.h0+(nf.h1<<8)+(nf.h2<<16)+(nf.h3<<24);
 
     out=(Bitmap*)calloc(sizeof(Bitmap), w*h*(mode==0?3:1)+3);
+    if(out == NULL){
+        return out;
+    }
     out->width=w;
     out->height=h;
     out->depth=mode==0?24:8;
@@ -237,6 +240,9 @@ int saveBitmap(const char *fname, Bitmap *bmp)
 Bitmap *createBitmap(int w, int h, int d)
 {
     Bitmap *out=(Bitmap*)calloc(sizeof(Bitmap), w*h*d/8+3);
+    if(out == NULL){
+        return out;
+    }
     out->width=w;
     out->height=h;
     out->depth=d;

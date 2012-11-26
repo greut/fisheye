@@ -46,7 +46,7 @@
 //
 //             Y
 
-void fisheye_square_mask(double * mask, int width, double r, double m) {
+void fisheye_square_mask(double * mask, unsigned int width, double r, double m) {
     geometry_t g = {
         width,
         width,
@@ -54,7 +54,7 @@ void fisheye_square_mask(double * mask, int width, double r, double m) {
     };
     point_t *c = point_new(0., 0.), *nc;
     polar_t *p, *np;
-    int x, y, ycol, xcol, wx, wy, wxcol, wycol;
+    unsigned int x, y, ycol, xcol, wx, wy, wxcol, wycol;
     double dx, dy;
     // Pre calculate the new position
     for (y=0; y <= width/2; y++) {
@@ -202,15 +202,23 @@ main(int argc, const char** argv) {
     }
     clock_t t0 = clock();
     Bitmap* img = loadBitmap(argv[1]);
-    int width = img->width,
-        height = img->height;
+    if (img == NULL) {
+        std::cerr << "Cannot open " << argv[1] << std::endl;
+        return 1;
+    }
+    unsigned int width = img->width,
+                 height = img->height;
     clock_t t1 = clock();
     double radius = (height < width ? height : width) * .45,
            magnify_factor = 5.0;
-    unsigned int mask_width = ceil(2 * radius);
-    double *mask = (double *) calloc(
-        sizeof(double),
-        mask_width * mask_width * 2);
+    unsigned int mask_width = ceil(2 * radius),
+                 mask_size = mask_width * mask_width * 2;
+    double *mask = (double *) calloc(sizeof(double), mask_size);
+    if (mask == NULL) {
+        std::cerr << "Cannot allocate mask of size " << mask_size << std::endl;
+        free(img);
+        return 1;
+    }
     fisheye_square_mask(mask, mask_width, radius, magnify_factor);
     clock_t t2 = clock();
     fisheye_inplace_from_square_mask(img, mask, mask_width);
