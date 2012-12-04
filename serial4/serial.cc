@@ -16,40 +16,6 @@
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
 
-// The Fish-Eye table contains relative position of each points, because of the
-// symmetry, it can be computed once and translated to the eight parts
-//
-// X: the destination
-// O: the source
-// (dx, dy) the vector from dest to source
-//
-// \ (dx, dy)  | (-dx, dy) /
-//  \          |          /
-//   \   X     |     X   /
-//    \        |        /
-//     \   O   |   O   /
-//      \      |      /
-//  X    \     |     /     X
-//     O  \    |    /   O
-//         \   |   /
-// (dy, dx) \  |  / (-dy , dx)
-//           \ | /
-// ------------+--------------> X
-//           / | \                  .
-// (dy, -dx)/  |  \ (-dy, -dx)      .
-//         /   |   \                .
-//     O  /    |    \   O           .
-//  X    /     |     \     X        .
-//      /  O   |   O  \             .
-//     /       |       \            .
-//    /  X     |    X   \           .
-//   /         |         \          .
-//  /          |          \         .
-// / (dx, -dy) | (-dx, -dy)\        .
-//             v
-//
-//             Y
-
 void fisheye_square_half_mask(double * mask, int width, double r, double m) {
     geometry_t g = {
         (int) ceil(2. * r),
@@ -138,7 +104,9 @@ fisheye_inplace_from_square_half_mask(Bitmap* img, double* mask, unsigned int ma
     unsigned int x, y, x0 = 0, y0 = 0, yy, zero = 0,
         width = img->width,
         height = img->height,
-        ycorr = height % 2 ? 0 : 1;
+        ycorr = height % 2 ? 0 : 1,
+        xcorr = width % 2 ? 0 : 1;
+
     double* dv;
     if (width / 2 > mask_width) {
         x0 = max(zero, ((width / 2) - mask_width));
@@ -160,12 +128,12 @@ fisheye_inplace_from_square_half_mask(Bitmap* img, double* mask, unsigned int ma
 
                 // North-East
                 dv[0] = -dv[0];
-                c->x = width - 1 - x + x0;
+                c->x = width - xcorr - (x + x0);
                 fisheye_inplace_sub(img, c, dv);
 
                 // South-East
                 dv[1] = -dv[1];
-                r->x = width - 1 - (x + x0);
+                r->x = width - xcorr - (x + x0);
                 fisheye_inplace_sub(img, r, dv);
                 dv[0] = -dv[0];
 
