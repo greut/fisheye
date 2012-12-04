@@ -1,5 +1,6 @@
+CC=g++
 CPPFLAGS = -W -Wall -pedantic -std=c++0x
-LDFLAGS =
+LDFLAGS = -lm
 COMPILE.cc = $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
 COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
 LINK.o = $(CC) $(LDFLAGS) $(TARGET_ARCH)

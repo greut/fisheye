@@ -2,6 +2,10 @@
 #include <math.h>
 #include <stdlib.h>
 
+#ifndef M_PI
+#define M_PI 3.141592653589793
+#endif
+
 point_t *
 point_new (double x, double y) {
     point_t *t = (point_t *) malloc(sizeof(point_t));

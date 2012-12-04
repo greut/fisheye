@@ -161,6 +161,86 @@ Bitmap *loadBitmap(const char *fname)
     return out;
 }
 
+/** Load bitmap header from file */
+Bitmap *loadBitmapHeaderOnly(const char *fname)
+{
+    BMHeader hd;
+    BMInfo nf;
+    unsigned int bo;
+    unsigned char pal[1024];
+    int mode=0;
+    int x,w,h;
+    Bitmap *out;
+    FILE *fptr;
+
+    if(fname==NULL)
+    {
+        printf("loadBitmap: NULL filename\n");
+        return NULL;
+    }
+
+    fptr=fopen(fname,"rb");
+    if(fptr==NULL)
+    {
+        printf("loadBitmap: Could not open '%s'\n",fname);
+        return NULL;
+    }
+
+    fread(&hd,sizeof(hd),1,fptr);
+    fread(&nf,sizeof(nf),1,fptr);
+
+    if(hd.b!='B' || hd.m!='M')
+    {
+        printf("loadBitmap: Invalid file type in '%s'\n",fname);
+        return NULL;
+    }
+    if(nf.cs0!=sizeof(nf))
+    {
+        printf("loadBitmap: Unknown file format in '%s'\n",fname);
+        return NULL;
+    }
+    if(nf.bits0==8)
+    {
+        int cu;
+        // Palettized format
+        memset(pal,0,1024);
+        cu=nf.cu0+(nf.cu1<<8);
+        if(cu==0)
+            cu=256;
+        if(cu>256)
+        {
+            printf("loadBitmap: Too many palette colors in '%s'\n",fname);
+            return NULL;
+        }
+        fread(pal,cu,4,fptr);
+        mode=1;
+        for(x=0;x<256;x++)
+        {
+            if(pal[x*4]!=pal[x*4+1] || pal[x*4]!=pal[x*4+2])
+                mode=0;
+        }
+    }
+    else if(nf.bits0!=24 && nf.bits0!=32)
+    {
+        printf("loadBitmap: Cannot handle %d bpp in '%s'\n",nf.bits0,fname);
+        return NULL;
+    }
+
+    bo=hd.o0+(hd.o1<<8)+(hd.o2<<16)+(hd.o3<<24);
+    fseek(fptr,bo,0);
+
+    w=nf.w0+(nf.w1<<8)+(nf.w2<<16)+(nf.w3<<24);
+    h=nf.h0+(nf.h1<<8)+(nf.h2<<16)+(nf.h3<<24);
+
+    out=(Bitmap*)calloc(sizeof(Bitmap), w*h*(mode==0?3:1)+3);
+    out->width=w;
+    out->height=h;
+    out->depth=mode==0?24:8;
+
+    fclose(fptr);
+    return out;
+}
+
 /** Save bitmap to file */
 int saveBitmap(const char *fname, Bitmap *bmp)
 {

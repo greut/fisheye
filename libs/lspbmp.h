@@ -15,6 +15,7 @@ typedef struct Bitmap
 } Bitmap;
 
 Bitmap *loadBitmap(const char *fname);
+Bitmap *loadBitmapHeaderOnly(const char *fname);
 int saveBitmap(const char *fname, Bitmap *bmp);
 Bitmap *createBitmap(int w, int h, int d);
 
