@@ -12,7 +12,8 @@ gnuplot <<EOF
     plot "serial0.tsv" u (\$2/$f):5 title "serial 0" with linespoints, \\
         "serial1.tsv" u (\$2/$f):(\$4+\$5) title "serial 1" with linespoints, \\
         "serial2.tsv" u (\$2/$f):(\$4+\$5) title "serial 2" with linespoints, \\
-        "serial3.tsv" u (\$2/$f):(\$4+\$5) title "serial 3" with linespoints
+        "serial3.tsv" u (\$2/$f):(\$4+\$5) title "serial 3" with linespoints, \\
+        "serial4.tsv" u (\$2/$f):(\$4+\$5) title "serial 4" with linespoints
 EOF
 
 gnuplot <<EOF
@@ -26,5 +27,6 @@ gnuplot <<EOF
     plot "serial0.tsv" u (\$2/$f):5 every ::2 title "serial 0" with linespoints, \\
         "serial1.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 1" with linespoints, \\
         "serial2.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 2" with linespoints, \\
-        "serial3.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 3" with linespoints
+        "serial3.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 3" with linespoints, \\
+        "serial4.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 4" with linespoints
 EOF
