@@ -39,7 +39,7 @@ Build from Serial 3.
 
 Stores only a mask that is a quarter of the full lense area.
 
-### OpenMP0
+### OpenMP 0
 
 Build from Serial 4.
 
