@@ -186,7 +186,7 @@ main(int argc, const char** argv) {
     clock_t t3 = clock();
     clock_t saved = saveBitmap(argv[2], img);
     free(mask);
-    free(img);
+    destroyBitmap(img);
     clock_t t4 = clock();
 
     if (!saved) {

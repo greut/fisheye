@@ -182,9 +182,10 @@ main(int argc, const char** argv) {
     double *mask;
     const char *fname = argv[1];
 #if defined (_OPENMP)
-#pragma omp parallel num_threads(2) \
+#pragma omp parallel \
     default(none) \
-    shared(img, fname, radius, mask, mask_width, magnify_factor)
+    firstprivate(fname, mask_width, radius, magnify_factor) \
+    shared(img, mask)
 {
 #pragma omp sections
 {
@@ -209,7 +210,7 @@ main(int argc, const char** argv) {
     double t3 = omp_get_wtime();
     int saved = saveBitmap(argv[2], img);
     free(mask);
-    free(img);
+    destroyBitmap(img);
     double t4 = omp_get_wtime();
 
     if (!saved) {
