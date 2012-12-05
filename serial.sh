@@ -13,7 +13,9 @@ gnuplot <<EOF
         "serial1.tsv" u (\$2/$f):(\$4+\$5) title "serial 1" with linespoints, \\
         "serial2.tsv" u (\$2/$f):(\$4+\$5) title "serial 2" with linespoints, \\
         "serial3.tsv" u (\$2/$f):(\$4+\$5) title "serial 3" with linespoints, \\
-        "serial4.tsv" u (\$2/$f):(\$4+\$5) title "serial 4" with linespoints
+        "serial4.tsv" u (\$2/$f):(\$4+\$5) title "serial 4" with linespoints, \\
+        "serial5.tsv" u (\$2/$f):(\$4+\$5) title "serial 5" with linespoints, \\
+        "openmp0.tsv" u (\$2/$f):(\$4+\$5) title "openmp 0" with linespoints
 EOF
 
 gnuplot <<EOF
@@ -28,5 +30,7 @@ gnuplot <<EOF
         "serial1.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 1" with linespoints, \\
         "serial2.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 2" with linespoints, \\
         "serial3.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 3" with linespoints, \\
-        "serial4.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 4" with linespoints
+        "serial4.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 4" with linespoints, \\
+        "serial5.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 5" with linespoints, \\
+        "openmp0.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "openmp 0" with linespoints
 EOF
