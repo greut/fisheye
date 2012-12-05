@@ -12,9 +12,13 @@ typedef struct Bitmap
 	int height;
 	int depth;
 	unsigned char *data;
+    // mmap
+    size_t length;
+    unsigned char *mmap;
 } Bitmap;
 
 Bitmap *loadBitmap(const char *fname);
+Bitmap *loadBitmapMode(const char *fname, int mode);
 Bitmap *loadBitmapHeaderOnly(const char *fname);
 int saveBitmap(const char *fname, Bitmap *bmp);
 Bitmap *createBitmap(int w, int h, int d);

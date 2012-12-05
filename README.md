@@ -39,8 +39,18 @@ Build from Serial 3.
 
 Stores only a mask that is a quarter of the full lense area.
 
+### Serial 5
+
+Build from Serial 4.
+
+It doesn't work in-place anymore and the file is read using `mmap` which cuts
+off the loading time of the bitmap entirely.
+
 ### OpenMP 0
 
 Build from Serial 4.
 
 Reading the file and building the mask are done in parallel.
+
+**Problem:** the memory bandwidth limitation makes the reading way longer than
+in serial mode.
