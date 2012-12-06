@@ -17,3 +17,9 @@ fisheye
 *.lai
 *.la
 *.a
+
+# Latex
+*.aux
+*.log
+*.out
+*.pdf

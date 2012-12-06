@@ -1,0 +1,187 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\title{
+    \Large Fish-eye transformation with bilinear interpolation \\
+    \large CS-425 Program parallelization on PC clusters}
+\author{
+    Yoan Blanc \texttt{yoan.blanc@epfl.ch}
+}
+\date{\today}
+
+\documentclass[10pt,a4paper]{article}
+\usepackage[svgnames]{xcolor}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{fontspec}
+\usepackage{tikz}
+\usepackage{framed}
+\setmainfont[Mapping=tex-text,Ligatures={Common,Rare,Discretionary}]{Linux Libertine O}
+\newfontfamily\quotefont[Mapping=tex-text,Ligatures={Common,Rare,Discretionary}]{Linux Libertine O}
+
+% http://tex.stackexchange.com/questions/16964/block-quote-with-big-quotation-marks
+% Make commands for the quotes
+\newcommand*{\openquote}{\tikz[remember picture,overlay,xshift=-15pt,yshift=-10pt]
+\node (OQ) {\quotefont\fontsize{60}{60}\selectfont``};\kern0pt}
+\newcommand*{\closequote}{\tikz[remember picture,overlay,xshift=15pt,yshift=10pt]
+\node (CQ) {\quotefont\fontsize{60}{60}\selectfont''};}
+% select a colour for the shading
+\definecolor{shadecolor}{named}{Azure}
+% wrap everything in its own environment
+\newenvironment{shadequote}%
+{\begin{snugshade}\begin{quote}\openquote}
+{\hfill\closequote\end{quote}\end{snugshade}}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+This report will explore a fish-eye transformation with a bilinear
+interpolation running in serial mode (one process) and how it’ll be
+parallelized using either message passing (MPI, DPS) or shared memory
+alternatives (OpenMP). At this point, no parallel implementation have been
+done.
+
+\section{Analysis}
+\textbf{TODO}
+
+\section{Implementation}
+\textbf{TODO}
+
+\subsection{Serial}
+\textbf{TODO}
+
+\subsection{Shared memory}
+\textbf{TODO}
+
+\subsection{Message passing}
+\textbf{TODO}
+
+\subsection{Benchmarks}
+\textbf{TODO}
+
+\section{Conclusion}
+
+\subsection{Algorithms}
+
+\begin{shadequote}
+    FIRST OPTIMIZE ON ONE CORE, THEN PARALLELIZE (the right
+    algorithm) \\ ---\emph{Vincent Keller}
+\end{shadequote}
+
+This section will present the one core (serial) algorithms that may be
+parallelized. Any of them, tries to tackle a particular problem of its
+predecessor(s): computational time, I/O time or memory usage.
+
+\begin{itemize}
+    \item \textbf{Serial 0}\\
+    One naive version using ``ray tracing'' (going from destination to source)
+
+    \item \textbf{Serial 1} ~(computational)\\
+    \emph{Serial 0} + the naive version with pre-calculated rays optimization.
+
+    \item \textbf{Serial 2} ~(computational)\\
+    \emph{Serial 1} + the pre-calculated optimization for the fish-eye (lens)
+    zone only.
+
+    \item \textbf{Serial 3} ~(memory, computational)\\
+    \emph{Serial 2} + making the transformation in place plus some
+    computation optimizations (\verb|for-loops|)
+
+    \item \textbf{Serial 4} ~(memory)\\
+    \emph{Serial 3} + use a smaller mask, only $\frac{1}{4}$ of the full lens.
+
+    \item \textbf{Serial 5} ~(I/O)\\
+    \emph{Serial 4} + Opening the source file using \texttt{mmap}
+    (\verb|MMAP(2)|) and not working in-place anymore.
+
+    \item \textbf{Serial 6} ~(memory, I/O)\\
+    \emph{Serial 4} + Copying the source file to destination using
+    \texttt{sendfile} (\verb|SENDFILE(2)|), working in place and using
+    \texttt{mmap} \end{itemize}.
+
+\subsubsection{Serial 0}
+
+The naive serial version works as follow:
+
+\begin{itemize}
+    \item each destination pixel $(x,y)$ is converted into its polar
+    coordinates equivalent. The origin $(0,0)$ is the center of the picture
+    $(\frac{width}{2},\frac{height}{2})$.
+    
+    \item now it’s source point is calculated (the solid arrow). If the point
+    $(r,\theta)$ is:
+
+    \begin{itemize}
+        \item outside the fisheye radius, the source pixel is the same as the
+        destination pixel.
+
+
+        \item inside the fisheye radius, the source pixel
+        $(r\prime,\theta\prime)$ is calculated using the formula given in
+        the project description ($m$ is the magnification factor):
+        
+        $ \theta\prime = \theta $ \\
+        $ r' = \frac{1}{1+m\frac{1-r}{r}} $
+        
+    \end{itemize}
+
+    \item then a bilinear interpolation is made between $(x\prime,y\prime)$
+    which may be real number and the $4$ surrounding pixels in the source
+    picture (the dotted arrow).
+
+\end{itemize}
+
+\subsubsection{Serial 1}
+
+This improvement does the very same as serial 0 but will make $25\%$ less polar
+to radius calculation by pre-calculating the $(x\prime,y\prime)$ values for
+each pixel. The fisheye mask as a central symmetry. So it exploits it to only
+calculate the top left quarter of the picture and then transpose it to the $3$
+others. Now while building the destination picture, the source pixel is
+obtained by using the mask (the solid arrow) instead of calculating everything
+(the dashed arrow).  The billinear interpolation (the dotted arrow) still needs
+to be done since there are no assumed symmetric in the source picture.
+
+\subsubsection{Serial 2}
+
+It’s building upon \emph{Serial 1}, with a little improvement. The mask is not
+only symmetrical in $4$ but in $8$ as well easily if the mask is a square. And
+as everything outside the fisheye lense is set to null, it’s simply wasted
+space. In face, the mask is infinity-symmetrical but it gets tricky in
+cartesian coordinates (but doable still if the mask’s size are okay). Here it
+does less calculation and uses less storage for the mask.
+
+\subsubsection{Serial 3}
+
+Building from \emph{Serial 2}, it removes the need of having a source and a
+destination and works in the source data directly. It wasn’t possible because
+while read from top to bottom and left to right, everything but the top left
+corner will modify data it’ll read later on. The algorithm here will act
+differently for each quarter of the output picture. And other gain, everything
+from the source picture outside the lens don’t have to be copied over to the
+destination one.
+
+\subsection{Machines}
+
+Several machines have been used for this project and any number mentions which
+one was used.
+
+\begin{itemize}
+    \item \textbf{Macbook5,2}\\
+    my personal laptop running Gentoo Linux, x86\_64, Intel Core 2 Duo P7550
+    @2.26GHz, 2Go RAM.
+    
+    \item \textbf{BC}\\
+    The machines from BC lab running Ubuntu Linux 10.10, x86\_64, Intel Core i7
+    920 @2.66GHz, 6Go RAM.
+
+\end{itemize}
+
+%\bibliographystyle{unsrt}
+%\bibliography{report}
+
+\end{document}
