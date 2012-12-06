@@ -7,12 +7,13 @@ export OMP_NUM_THREADS=8
 for i in `seq 0 5`; do
     echo Serial $i
     echo "---------"
-    d=serial$i
-    cd $d && make clean && make && cd ..
-    rm -f $d.tsv
+    d=src/serial$i
+    tsv=data/serial$i.tsv
+    cd $d && make clean && make && cd ../..
+    rm -f $tsv
     for img in $IMAGES; do
         echo " $img"
-        time `$d/fisheye img/$img $TMP >> $d.tsv`
+        time `$d/fisheye img/$img $TMP >> $sv`
         rm -f $TMP
         echo ""
         echo ""
@@ -23,12 +24,13 @@ done
 for i in `seq 0 1`; do
     echo OpenMP $i
     echo "---------"
-    d=openmp$i
-    cd $d && make clean && make && cd ..
-    rm -f $d.tsv
+    d=src/openmp$i
+    tsv=data/openmp$i.tsv
+    cd $d && make clean && make && cd ../..
+    rm -f $tsv
     for img in $IMAGES; do
         echo " $img"
-        time `$d/fisheye img/$img $TMP >> $d.tsv`
+        time `$d/fisheye img/$img $TMP >> $tsv`
         rm -f $TMP
         echo ""
         echo ""

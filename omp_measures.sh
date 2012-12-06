@@ -4,12 +4,12 @@ TMP=_.bmp
 for i in `seq 0 1`; do
     echo OpenMP $i
     echo "---------"
-    d=openmp$i
+    d=src/openmp$i
     for core in `seq 8`; do
         export OMP_NUM_THREADS=$core
         echo OMP_NUM_THREADS=$core
-        f=data/$d-$core.tsv
-        cd $d && make clean && make && cd ..
+        f=data/openmp$i-$core.tsv
+        cd $d && make clean && make && cd ../..
         rm -f $f
         for img in $IMAGES; do
             echo " $img"
