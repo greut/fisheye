@@ -1,3 +1,6 @@
+#include <sys/sendfile.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <iostream>
 #include <stdlib.h>
@@ -51,11 +54,11 @@ void fisheye_square_half_mask(double * mask, int width, double r, double m) {
 }
 
 void
-fisheye_sub(const Bitmap *src, Bitmap *dst,  const point_t *c, const double* dv) {
+fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     double dx, dy, idx, idy, r0, g0, b0, r1, g1, b1;
     unsigned int nx, ny, mx, my,
         x = c->x * COLORS,
-        width = src->width * COLORS;
+        width = img->width * COLORS;
     unsigned char *data0, *data1, *to, r, g, b;
     double cx = c->x + dv[0],
         cy = c->y + dv[1];
@@ -71,9 +74,9 @@ fisheye_sub(const Bitmap *src, Bitmap *dst,  const point_t *c, const double* dv)
     nx *= COLORS;
     mx *= COLORS;
     // rows
-    data0 = &(src->data[ny * width]);
-    data1 = &(src->data[my * width]);
-    to = &(dst->data[(int)(c->y * width)]);
+    data0 = &(img->data[ny * width]);
+    data1 = &(img->data[my * width]);
+    to = &(img->data[(int)(c->y * width)]);
     // intermediary points
     r0 = idx * data0[nx] + dx * data0[mx + 0];
     g0 = idx * data0[nx + 1] + dx * data0[mx + 1];
@@ -91,12 +94,11 @@ fisheye_sub(const Bitmap *src, Bitmap *dst,  const point_t *c, const double* dv)
 }
 
 void
-fisheye_from_square_half_mask(const Bitmap* src, Bitmap* dst, double* mask, unsigned int mask_width) {
+fisheye_inplace_from_square_half_mask(Bitmap* img, double* mask, unsigned int mask_width) {
     point_t *c = point_new(0, 0), *r = point_new(0, 0);
-    unsigned int x, y, x0 = 0, y0 = 0, yy, zero = 0, sx, sy, swx, swy, s,
-        swidth = src->width * COLORS,
-        width = src->width,
-        height = src->height,
+    unsigned int x, y, x0 = 0, y0 = 0, yy, zero = 0,
+        width = img->width,
+        height = img->height,
         ycorr = height % 2 ? 0 : 1,
         xcorr = width % 2 ? 0 : 1;
 
@@ -112,107 +114,59 @@ fisheye_from_square_half_mask(const Bitmap* src, Bitmap* dst, double* mask, unsi
         c->y = y + y0;
         r->y = width - ycorr - (y + y0);
         yy = y * mask_width << 1;
-        sy = (y + y0) * width * COLORS;
-        swy = (height - 1 - y - y0) * width * COLORS;
         for (x = 0; x < mask_width; x++) {
             dv = &(mask[yy + (x << 1)]);
             if (dv[0] != 0 || dv[1] != 0) {
                 // North-West
                 c->x = x + x0;
-                fisheye_sub(src, dst, c, dv);
+                fisheye_inplace_sub(img, c, dv);
 
                 // North-East
                 dv[0] = -dv[0];
                 c->x = width - xcorr - (x + x0);
-                fisheye_sub(src, dst, c, dv);
+                fisheye_inplace_sub(img, c, dv);
 
                 // South-East
                 dv[1] = -dv[1];
                 r->x = width - xcorr - (x + x0);
-                fisheye_sub(src, dst, r, dv);
+                fisheye_inplace_sub(img, r, dv);
                 dv[0] = -dv[0];
 
                 // South-West
                 r->x = x + x0;
-                fisheye_sub(src, dst, r, dv);
+                fisheye_inplace_sub(img, r, dv);
                 dv[1] = -dv[1];
-            } else {
-                // Fill the sides of the lens
-                sx = (x + x0) * COLORS;
-                swx = (width - 1 - x - x0) * COLORS;
-                // North-West
-                s = sy + sx;
-                dst->data[s] = src->data[s];
-                dst->data[s + 1] = src->data[s + 1];
-                dst->data[s + 2] = src->data[s + 2];
-
-                // North-East
-                s = sy + swx;
-                dst->data[s] = src->data[s];
-                dst->data[s + 1] = src->data[s + 1];
-                dst->data[s + 2] = src->data[s + 2];
-
-                // South-East
-                s = swy + swx;
-                dst->data[s] = src->data[s];
-                dst->data[s + 1] = src->data[s + 1];
-                dst->data[s + 2] = src->data[s + 2];
-
-                // South-West
-                s = swy + sx;
-                dst->data[s] = src->data[s];
-                dst->data[s + 1] = src->data[s + 1];
-                dst->data[s + 2] = src->data[s + 2];
-            }
-        }
-    }
-    // Fill the borders
-    for (y=0; y<height/2; y++) {
-        sy = y * swidth;
-        swy = (width - 1 - y) * swidth;
-        if (y < y0) {
-            for (x=0; x<width; x++) {
-                sx = x * COLORS;
-                s = sy + sx;
-                dst->data[s] = src->data[s];
-                dst->data[s + 1] = src->data[s + 1];
-                dst->data[s + 2] = src->data[s + 2];
-
-                s = swy + sx;
-                dst->data[s] = src->data[s];
-                dst->data[s + 1] = src->data[s + 1];
-                dst->data[s + 2] = src->data[s + 2];
-            }
-        } else {
-            for (x=0; x<x0; x++) {
-                sx = x * COLORS;
-                swx = (width - 1 - x) * COLORS;
-
-                s = sy + sx;
-                dst->data[s] = src->data[s];
-                dst->data[s + 1] = src->data[s + 1];
-                dst->data[s + 2] = src->data[s + 2];
-
-                s = sy + swx;
-                dst->data[s] = src->data[s];
-                dst->data[s + 1] = src->data[s + 1];
-                dst->data[s + 2] = src->data[s + 2];
-
-                s = swy + swx;
-                dst->data[s] = src->data[s];
-                dst->data[s + 1] = src->data[s + 1];
-                dst->data[s + 2] = src->data[s + 2];
-
-                s = swy + sx;
-                dst->data[s] = src->data[s];
-                dst->data[s + 1] = src->data[s + 1];
-                dst->data[s + 2] = src->data[s + 2];
             }
         }
     }
 
     free(c);
     free(r);
+}
+
+// This function is not portable
+int fcopy(const char *from, const char *to) {
+    unsigned int ifd, ofd;
+    struct stat buf;
+    off_t offset = 0;
+
+    ifd = open(from, O_RDONLY);
+    if (ifd == 0) {
+        fprintf(stderr, "Cannot open %s\n", from);
+        return 0;
+    }
+    fstat(ifd, &buf);
+    ofd = open(to, O_RDWR|O_CREAT|O_TRUNC, buf.st_mode);
+    if (ofd == 0) {
+        fprintf(stderr, "Cannot open %s\n", to);
+        return 0;
+    }
+
+    sendfile(ofd, ifd, &offset, buf.st_size); 
+
+    close(ifd);
+    close(ofd);
+    return 1;
 }
 
 int
@@ -222,10 +176,13 @@ main(int argc, const char** argv) {
         return 1;
     }
     clock_t t0 = clock();
-    Bitmap* src = loadBitmapMode(argv[1], O_RDONLY);
-    Bitmap* dst = createBitmap(src->width, src->height, src->depth);
-    int width = src->width,
-        height = dst->height;
+    if (!fcopy(argv[1], argv[2])) {
+        std::cerr << "Cannot copy the file" << std::endl;
+        return 1;
+    }
+    Bitmap* img = loadBitmap(argv[2]);
+    int width = img->width,
+        height = img->height;
     clock_t t1 = clock();
     double radius = std::min(height, width) * .45,
            magnify_factor = 5.0;
@@ -249,24 +206,18 @@ main(int argc, const char** argv) {
         mask_width * mask_width << 1);
     fisheye_square_half_mask(mask, mask_width, radius, magnify_factor);
     clock_t t2 = clock();
-    fisheye_from_square_half_mask(src, dst, mask, mask_width);
+    fisheye_inplace_from_square_half_mask(img, mask, mask_width);
     clock_t t3 = clock();
-    int saved = saveBitmap(argv[2], dst);
     free(mask);
-    destroyBitmap(src);
-    destroyBitmap(dst);
+    destroyBitmap(img);
     clock_t t4 = clock();
 
-    if (!saved) {
-        std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
-    } else {
-        std::cout << argv[1] << "\t";
-        std::cout << width * height << "\t";
-        std::cout << double(t4-t0)/CLOCKS_PER_SEC << "\t";
-        std::cout << double(t1-t0)/CLOCKS_PER_SEC << "\t";
-        std::cout << double(t2-t1)/CLOCKS_PER_SEC << "\t";
-        std::cout << double(t3-t2)/CLOCKS_PER_SEC << "\t";
-        std::cout << double(t4-t3)/CLOCKS_PER_SEC << std::endl;
-    }
-    return saved;
+    std::cout << argv[1] << "\t";
+    std::cout << width * height << "\t";
+    std::cout << double(t4-t0)/CLOCKS_PER_SEC << "\t";
+    std::cout << double(t1-t0)/CLOCKS_PER_SEC << "\t";
+    std::cout << double(t2-t1)/CLOCKS_PER_SEC << "\t";
+    std::cout << double(t3-t2)/CLOCKS_PER_SEC << "\t";
+    std::cout << double(t4-t3)/CLOCKS_PER_SEC << std::endl;
+    return 0;
 }

@@ -18,6 +18,7 @@ gnuplot <<EOF
         "$data/serial3.tsv" u (\$2/$f):(\$5+\$6) title "serial 3" with linespoints, \\
         "$data/serial4.tsv" u (\$2/$f):(\$5+\$6) title "serial 4" with linespoints, \\
         "$data/serial5.tsv" u (\$2/$f):(\$5+\$6) title "serial 5" with linespoints, \\
+        "$data/serial6.tsv" u (\$2/$f):(\$5+\$6) title "serial 6" with linespoints, \\
         "$data/openmp0.tsv" u (\$2/$f):(\$5+\$6) title "openmp 0 ($cores)" with linespoints, \\
         "$data/openmp1.tsv" u (\$2/$f):(\$5+\$6) title "openmp 1 ($cores)" with linespoints
 EOF
@@ -37,6 +38,7 @@ gnuplot <<EOF
         "$data/serial3.tsv" u (\$2/$f):(\$5+\$6) every ::2 title "serial 3" with linespoints, \\
         "$data/serial4.tsv" u (\$2/$f):(\$5+\$6) every ::2 title "serial 4" with linespoints, \\
         "$data/serial5.tsv" u (\$2/$f):(\$5+\$6) every ::2 title "serial 5" with linespoints, \\
+        "$data/serial6.tsv" u (\$2/$f):(\$5+\$6) every ::2 title "serial 6" with linespoints, \\
         "$data/openmp0.tsv" u (\$2/$f):(\$5+\$6) every ::2 title "openmp 0 ($cores)" with linespoints, \\
         "$data/openmp1.tsv" u (\$2/$f):(\$5+\$6) every ::2 title "openmp 1 ($cores)" with linespoints
 EOF
@@ -55,6 +57,7 @@ gnuplot <<EOF
         "$data/serial3.tsv" u (\$2/$f):3 title "serial 3" with linespoints, \\
         "$data/serial4.tsv" u (\$2/$f):3 title "serial 4" with linespoints, \\
         "$data/serial5.tsv" u (\$2/$f):3 title "serial 5" with linespoints, \\
+        "$data/serial6.tsv" u (\$2/$f):3 title "serial 6" with linespoints, \\
         "$data/openmp0.tsv" u (\$2/$f):3 title "openmp 0 ($cores)" with linespoints, \\
         "$data/openmp1.tsv" u (\$2/$f):3 title "openmp 1 ($cores)" with linespoints
 EOF
@@ -74,6 +77,7 @@ gnuplot <<EOF
         "$data/serial3.tsv" u (\$2/$f):3 every ::2 title "serial 3" with linespoints, \\
         "$data/serial4.tsv" u (\$2/$f):3 every ::2 title "serial 4" with linespoints, \\
         "$data/serial5.tsv" u (\$2/$f):3 every ::2 title "serial 5" with linespoints, \\
+        "$data/serial6.tsv" u (\$2/$f):3 every ::2 title "serial 6" with linespoints, \\
         "$data/openmp0.tsv" u (\$2/$f):3 every ::2 title "openmp 0 ($cores)" with linespoints, \\
         "$data/openmp1.tsv" u (\$2/$f):3 every ::2 title "openmp 1 ($cores)" with linespoints
 EOF

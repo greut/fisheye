@@ -46,6 +46,13 @@ Built from Serial 4.
 It doesn't work in-place anymore and the file is read using `mmap` which cuts
 off the loading time of the bitmap entirely.
 
+### Serial 6
+
+Built from Serial 5.
+
+Copy the input file to the output file destination using `sendfile` and then
+works in place using `mmap`. No save operations are required.
+
 ### OpenMP 0
 
 Built from Serial 4.

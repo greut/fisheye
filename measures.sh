@@ -4,7 +4,7 @@ TMP=_.bmp
 # the very max
 export OMP_NUM_THREADS=8
 
-for i in `seq 0 5`; do
+for i in `seq 0 6`; do
     echo Serial $i
     echo "---------"
     d=src/serial$i
@@ -13,7 +13,7 @@ for i in `seq 0 5`; do
     rm -f $tsv
     for img in $IMAGES; do
         echo " $img"
-        time `$d/fisheye img/$img $TMP >> $sv`
+        time `$d/fisheye img/$img $TMP >> $tsv`
         rm -f $TMP
         echo ""
         echo ""
