@@ -11,6 +11,10 @@
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a > _b ? _a : _b; })
+#define min(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a < _b ? _a : _b; })
 
 // The Fish-Eye table contains relative position of each points, because of the
 // symmetry, it can be computed once and translated to the eight parts
@@ -48,59 +52,76 @@
 
 void fisheye_square_mask(double * mask, unsigned int width, double r, double m) {
     geometry_t g = {
-        width,
-        width,
+        (int) ceil(2. * r),
+        (int) ceil(2. * r),
         {r, r}
     };
     point_t *c = point_new(0., 0.), *nc;
     polar_t *p, *np;
-    unsigned int x, y, ycol, xcol, wx, wy, wxcol, wycol;
-    double dx, dy;
-    // Pre calculate the new position
-    for (y=0; y <= width/2; y++) {
-        c->y = (double) y;
-        wy = width - y;
-        ycol = y * width * 2;
-        wycol = wy * width * 2;
-        wy *= 2;
-        for (x = y; x <= width/2; x++) {
-            c->x = (double) x;
+    int x, y, x2, y2, ycol, xcol, wx, wy, wx2, wy2, wxcol, wycol,
+        // shortcut
+        w2 = width >> 1,
+        // dividing by two on an integer round things up
+        is_odd = width % 2,
+        corr = is_odd ? 0 : 1;
+    double dx, dy,
+        shift = r - w2;
+
+    for (y=0; y <= w2; y++) {
+        c->y = (double) y + shift;
+        wy = width - y - 1;
+        ycol = y * width << 1;
+        wycol = (wy + corr) * width << 1;
+        wy2 = wy << 1;
+        y2 = y << 1;
+        for (x = y; x <= w2; x++) {
+            c->x = (double) x + shift;
             p = geometry_polar_from_point(&g, c);
             if (p->r < r) {
                 np = unmagnify(p, r, m);
                 nc = geometry_point_from_polar(&g, np);
-                dx = nc->x - x; // nc->x = x + dx
-                dy = nc->y - y; // nc->y = y + dy
+                dx = nc->x - c->x; // nc->x = x + dx
+                dy = nc->y - c->y; // nc->y = y + dy
                 free(nc);
                 free(np);
-                wx = width - x;
-                xcol = x * width * 2;
-                wxcol = wx * width * 2;
-                wx *= 2;
+                wx = width - x - 1;
+                xcol = x * width << 1;
+                wxcol = (wx + corr) * width << 1;
+                wx2 = wx << 1;
+                x2 = x << 1;
                 // 0
-                mask[ycol + x * 2] = dx;
-                mask[ycol + x * 2 + 1] = dy;
+                mask[ycol + x2] = dx;
+                mask[ycol + x2 + 1] = dy;
                 // 7
-                mask[ycol + wx] = -dx;
-                mask[ycol + wx + 1] = dy;
-                // 3
-                mask[wycol + x * 2] = dx;
-                mask[wycol + x * 2 + 1] = -dy;
-                // 4
-                mask[wycol + wx] = -dx;
-                mask[wycol + wx + 1] = -dy;
-                // 1
-                mask[xcol + y * 2] = dy;
-                mask[xcol + y * 2 + 1] = dx;
-                // 6
-                mask[xcol + wy] = -dy;
-                mask[xcol + wy + 1] = dx;
-                // 3
-                mask[wxcol + y * 2] = dy;
-                mask[wxcol + y * 2 + 1] = -dx;
-                // 4
-                mask[wxcol + wy] = -dy;
-                mask[wxcol + wy + 1] = -dx;
+                mask[ycol + wx2] = -dx;
+                mask[ycol + wx2 + 1] = dy;
+                if (is_odd || wy < width - 1) {
+                    // 3
+                    mask[wycol + x2] = dx;
+                    mask[wycol + x2 + 1] = -dy;
+                    // 4
+                    if (wycol + wx2 > width * width << 1) {
+                        std::cerr << "FAIL: " << wy << ", " << wx << std::endl;
+                    }
+                    mask[wycol + wx2] = -dx;
+                    mask[wycol + wx2 + 1] = -dy;
+                }
+                if (x != y) {
+                    // 1
+                    mask[xcol + y2] = dy;
+                    mask[xcol + y2 + 1] = dx;
+                    // 6
+                    mask[xcol + wy2] = -dy;
+                    mask[xcol + wy2 + 1] = dx;
+                    if (is_odd || wx < width - 1) {
+                        // 2
+                        mask[wxcol + y2] = dy;
+                        mask[wxcol + y2 + 1] = -dx;
+                        // 5
+                        mask[wxcol + wy2] = -dy;
+                        mask[wxcol + wy2 + 1] = -dx;
+                    }
+                }
             }
             free(p);
         }
@@ -111,7 +132,7 @@ void fisheye_square_mask(double * mask, unsigned int width, double r, double m) 
 void
 fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     double dx, dy, idx, idy, r0, g0, b0, r1, g1, b1;
-    unsigned int nx, ny,
+    unsigned int nx, ny, mx, my,
         x = c->x * COLORS,
         width = img->width * COLORS;
     unsigned char *data0, *data1, *to, r, g, b;
@@ -120,22 +141,25 @@ fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
 
     nx = floor(cx);
     ny = floor(cy);
+    mx = ceil(cx);
+    my = ceil(cy);
     dx = cx - nx;
     dy = cy - ny;
     idx = 1 - dx;
     idy = 1 - dy;
     nx *= COLORS;
+    mx *= COLORS;
     // rows
     data0 = &(img->data[ny * width]);
-    data1 = &(img->data[(ny + 1) * width]);
+    data1 = &(img->data[my * width]);
     to = &(img->data[(int)(c->y * width)]);
     // intermediary points
-    r0 = idx * data0[nx] + dx * data0[nx + 3];
-    g0 = idx * data0[nx + 1] + dx * data0[nx + 4];
-    b0 = idx * data0[nx + 2] + dx * data0[nx + 5];
-    r1 = idx * data1[nx] + dx * data1[nx + 3];
-    g1 = idx * data1[nx + 1] + dx * data1[nx + 4];
-    b1 = idx * data1[nx + 2] + dx * data1[nx + 5];
+    r0 = idx * data0[nx] + dx * data0[mx + 0];
+    g0 = idx * data0[nx + 1] + dx * data0[mx + 1];
+    b0 = idx * data0[nx + 2] + dx * data0[mx + 2];
+    r1 = idx * data1[nx] + dx * data1[mx + 0];
+    g1 = idx * data1[nx + 1] + dx * data1[mx + 1];
+    b1 = idx * data1[nx + 2] + dx * data1[mx + 2];
     // final points
     r = idy * r0 + dy * r1;
     g = idy * g0 + dy * g1;
@@ -150,41 +174,44 @@ fisheye_inplace_from_square_mask(Bitmap* img, const double* mask, unsigned int m
     point_t *c = point_new(0., 0.);
     unsigned int x, y, x0, y0, yy, zero = 0,
         width = img->width,
-        height = img->height;
+        height = img->height,
+        w2 = width >> 1,
+        h2 = height >> 1;
     const double* dv;
-    x0 = max(zero, (width - mask_width)/2);
-    y0 = max(zero, (height - mask_width)/2);
-    for (y = y0; y < height/2; y++) {
+    x0 = max(zero, (width - mask_width) >> 1);
+    y0 = max(zero, (height - mask_width) >> 1);
+
+    for (y = y0; y < h2; y++) {
         c->y = y;
-        yy = (c->y - y0) * mask_width * 2;
-        for (x = x0; x <= width/2; x++) {
+        yy = (int)((c->y - y0) * mask_width) << 1;
+        for (x = x0; x < width/2; x++) {
             c->x = x;
-            dv = &(mask[yy + int((c->x - x0) * 2)]);
+            dv = &(mask[yy + ((int)(c->x - x0) << 1)]);
             if (dv[0] != 0 || dv[1] != 0) {
                 fisheye_inplace_sub(img, c, dv);
             }
         }
-        for (x = width - x0; x > width/2; x--) {
+        for (x = width - x0; x >= w2; x--) {
             c->x = x;
-            dv = &(mask[yy + int((c->x - x0) * 2)]);
+            dv = &(mask[yy + ((int)(c->x - x0) << 1)]);
             if (dv[0] != 0 || dv[1] != 0) {
                 fisheye_inplace_sub(img, c, dv);
             }
         }
     }
-    for (y = height - y0 - 2; y >= height/2; y--) {
+    for (y = height - y0 - 1; y >= h2; y--) {
         c->y = (double) y;
-        yy = (c->y - y0) * mask_width * 2;
-        for (x = x0; x <= width/2; x++) {
+        yy = (int)((c->y - y0) * mask_width) << 1;
+        for (x = x0; x < w2; x++) {
             c->x = (double) x;
-            dv = &(mask[yy + int((c->x - x0) * 2)]);
+            dv = &(mask[yy + ((int)(c->x - x0) << 1)]);
             if (dv[0] != 0 || dv[1] != 0) {
                 fisheye_inplace_sub(img, c, dv);
             }
         }
-        for (x = width - x0; x > width/2; x--) {
+        for (x = width - x0; x >= w2; x--) {
             c->x = (double) x;
-            dv = &(mask[yy + int((c->x - x0) * 2)]);
+            dv = &(mask[yy + ((int)(c->x - x0) << 1)]);
             if (dv[0] != 0 || dv[1] != 0) {
                 fisheye_inplace_sub(img, c, dv);
             }
@@ -209,10 +236,24 @@ main(int argc, const char** argv) {
     unsigned int width = img->width,
                  height = img->height;
     clock_t t1 = clock();
-    double radius = (height < width ? height : width) * .45,
+    double radius = min(height, width) * .45,
            magnify_factor = 5.0;
-    unsigned int mask_width = ceil(2 * radius),
-                 mask_size = mask_width * mask_width * 2;
+    if (argc > 3) {
+        sscanf(argv[3], "%lf", &radius);
+        if (radius <= 0) {
+            std::cerr << "Radius cannot be null or negative" << std::endl;
+            return 1;
+        }
+    }
+    if (argc > 4) {
+        sscanf(argv[4], "%lf", &magnify_factor);
+        if (magnify_factor < 1) {
+            std::cerr << "Less than 1 magnify lens are not supported" << std::endl;
+            return 1;
+        }
+    }
+    unsigned int mask_width = min(min(width, height), ceil(2 * radius)),
+        mask_size = mask_width * mask_width * 2;
     double *mask = (double *) calloc(sizeof(double), mask_size);
     if (mask == NULL) {
         std::cerr << "Cannot allocate mask of size " << mask_size << std::endl;
@@ -225,7 +266,7 @@ main(int argc, const char** argv) {
     clock_t t3 = clock();
     clock_t saved = saveBitmap(argv[2], img);
     free(mask);
-    free(img);
+    destroyBitmap(img);
     clock_t t4 = clock();
 
     if (!saved) {

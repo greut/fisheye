@@ -89,8 +89,8 @@ main(int argc, const char** argv) {
     fisheye(dst, src);
     clock_t t2 = clock();
     clock_t saved = saveBitmap(argv[2], dst);
-    free(src);
-    free(dst);
+    destroyBitmap(src);
+    destroyBitmap(dst);
     clock_t t3 = clock();
 
     if (!saved) {
