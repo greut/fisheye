@@ -28,29 +28,36 @@ Precalculate the mask for the fisheye zone only
 
 ### Serial 3
 
-Build from Serial 2.
+Built from Serial 2.
 
 Works in the source memory area and removes the need for having a destination
 image.
 
 ### Serial 4
 
-Build from Serial 3.
+Built from Serial 3.
 
 Stores only a mask that is a quarter of the full lense area.
 
 ### Serial 5
 
-Build from Serial 4.
+Built from Serial 4.
 
 It doesn't work in-place anymore and the file is read using `mmap` which cuts
 off the loading time of the bitmap entirely.
 
 ### OpenMP 0
 
-Build from Serial 4.
+Built from Serial 4.
 
 Reading the file and building the mask are done in parallel.
 
 **Problem:** the memory bandwidth limitation makes the reading way longer than
 in serial mode.
+
+### OpenMP 1
+
+Built from Serial 5.
+
+Using the parallel work for creating the mask and doing the computation. `schedule`
+is set to `dynamic`.

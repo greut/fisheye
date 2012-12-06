@@ -209,9 +209,9 @@ main(int argc, const char** argv) {
     if (!saved) {
         fprintf(stderr, "The picture could not be saved to %s\n", argv[2]);
     } else {
-        int size;
+        int size = 1;
 #if defined (_OPENMP)
-#pragma omp parallel
+#pragma omp parallel default(none) shared(size)
 {
         size = omp_get_num_threads();
 }
