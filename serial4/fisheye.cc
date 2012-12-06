@@ -6,15 +6,6 @@
 #include "magnify.h"
 
 #define COLORS 3
-// http://stackoverflow.com/questions/3437404/min-and-max-in-c
-#define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
-#define min(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a < _b ? _a : _b; })
 
 void fisheye_square_half_mask(double * mask, int width, double r, double m) {
     geometry_t g = {
@@ -109,10 +100,10 @@ fisheye_inplace_from_square_half_mask(Bitmap* img, double* mask, unsigned int ma
 
     double* dv;
     if (width / 2 > mask_width) {
-        x0 = max(zero, ((width / 2) - mask_width));
+        x0 = std::max(zero, ((width / 2) - mask_width));
     }
     if (height / 2 > mask_width) {
-        y0 = max(zero, ((height / 2) - mask_width));
+        y0 = std::max(zero, ((height / 2) - mask_width));
     }
 
     for (y = 0; y < mask_width; y++) {
@@ -160,7 +151,7 @@ main(int argc, const char** argv) {
     int width = img->width,
         height = img->height;
     clock_t t1 = clock();
-    double radius = min(height, width) * .45,
+    double radius = std::min(height, width) * .45,
            magnify_factor = 5.0;
     if (argc > 3) {
         sscanf(argv[3], "%lf", &radius);
@@ -176,7 +167,7 @@ main(int argc, const char** argv) {
             return 1;
         }
     }
-    unsigned int mask_width = ceil(min(min(width, height)/2., radius));
+    unsigned int mask_width = ceil(std::min(std::min(width, height)/2., radius));
     double *mask = (double *) calloc(
         sizeof(double),
         mask_width * mask_width << 1);

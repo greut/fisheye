@@ -6,11 +6,6 @@
 #include "magnify.h"
 
 #define COLORS 3
-// http://stackoverflow.com/questions/3437404/min-and-max-in-c
-#define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
 
 // The Fish-Eye table contains relative position of each points, because of the
 // symmetry, it can be computed once and translated to the eight parts
@@ -112,15 +107,15 @@ void fisheye_square_mask(double * mask, unsigned int width, double r, double m) 
 void
 fisheye_from_square_mask(Bitmap* dst, const Bitmap* src, const double* mask, double mask_width) {
     point_t *c = point_new(0., 0.), *nc;
-    int x, y, x0, y0, nx, ny,
+    unsigned int x, y, x0, y0, nx, ny, zero = 0,
         width = src->width * COLORS,
         height = src->height;
     double dx, dy, r0, g0, b0, r1, g1, b1, r, g, b;
     const unsigned char *data, *data0, *data1;
     const double* dv;
     unsigned char *to;
-    x0 = max(0, (src->width - mask_width)/2);
-    y0 = max(0, (src->height - mask_width)/2);
+    x0 = std::max(zero, (unsigned int) ((src->width - mask_width)/2));
+    y0 = std::max(zero, (unsigned int) ((src->height - mask_width)/2));
     for (y=0; y < height; y++) {
         c->y = (double) y;
         to = &(dst->data[y * width]);

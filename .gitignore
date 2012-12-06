@@ -1,6 +1,10 @@
 # Vim
 .*.sw[op]
 
+# Results
+fisheye
+1.bmp
+
 # Compiled Object files
 *.slo
 *.lo

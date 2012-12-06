@@ -6,15 +6,6 @@
 #include "magnify.h"
 
 #define COLORS 3
-// http://stackoverflow.com/questions/3437404/min-and-max-in-c
-#define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
-#define min(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a < _b ? _a : _b; })
 
 // The Fish-Eye table contains relative position of each points, because of the
 // symmetry, it can be computed once and translated to the eight parts
@@ -58,7 +49,7 @@ void fisheye_square_mask(double * mask, unsigned int width, double r, double m) 
     };
     point_t *c = point_new(0., 0.), *nc;
     polar_t *p, *np;
-    int x, y, x2, y2, ycol, xcol, wx, wy, wx2, wy2, wxcol, wycol,
+    unsigned int x, y, x2, y2, ycol, xcol, wx, wy, wx2, wy2, wxcol, wycol,
         // shortcut
         w2 = width >> 1,
         // dividing by two on an integer round things up
@@ -178,8 +169,8 @@ fisheye_inplace_from_square_mask(Bitmap* img, const double* mask, unsigned int m
         w2 = width >> 1,
         h2 = height >> 1;
     const double* dv;
-    x0 = max(zero, (width - mask_width) >> 1);
-    y0 = max(zero, (height - mask_width) >> 1);
+    x0 = std::max(zero, (width - mask_width) >> 1);
+    y0 = std::max(zero, (height - mask_width) >> 1);
 
     for (y = y0; y < h2; y++) {
         c->y = y;
@@ -236,7 +227,7 @@ main(int argc, const char** argv) {
     unsigned int width = img->width,
                  height = img->height;
     clock_t t1 = clock();
-    double radius = min(height, width) * .45,
+    double radius = std::min(height, width) * .45,
            magnify_factor = 5.0;
     if (argc > 3) {
         sscanf(argv[3], "%lf", &radius);
@@ -252,7 +243,7 @@ main(int argc, const char** argv) {
             return 1;
         }
     }
-    unsigned int mask_width = min(min(width, height), ceil(2 * radius)),
+    unsigned int mask_width = std::min(std::min(width, height), (unsigned int) ceil(2 * radius)),
         mask_size = mask_width * mask_width * 2;
     double *mask = (double *) calloc(sizeof(double), mask_size);
     if (mask == NULL) {

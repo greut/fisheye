@@ -6,15 +6,8 @@
 #include "magnify.h"
 
 #define COLORS 3
-// http://stackoverflow.com/questions/3437404/min-and-max-in-c
-#define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
-#define min(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a < _b ? _a : _b; })
+#define max(x,y) ((x) > (y) ? (x) : (y))
+#define min(x,y) ((x) < (y) ? (x) : (y))
 
 void fisheye_square_half_mask(double * mask, int width, double r, double m) {
     geometry_t g = {
@@ -182,7 +175,7 @@ main(int argc, const char** argv) {
     double *mask;
     const char *fname = argv[1];
 #if defined (_OPENMP)
-#pragma omp parallel \
+#pragma omp parallel num_threads(2) \
     default(none) \
     firstprivate(fname, mask_width, radius, magnify_factor) \
     shared(img, mask)
@@ -216,14 +209,13 @@ main(int argc, const char** argv) {
     if (!saved) {
         fprintf(stderr, "The picture could not be saved to %s\n", argv[2]);
     } else {
-        int size = 1;
+        int size;
 #if defined (_OPENMP)
-#pragma omp parallel shared (size)
+#pragma omp parallel
 {
         size = omp_get_num_threads();
 }
 #endif
-        size = omp_get_num_threads();
         printf("%s\t%d\t%.2lf\t%.2lf\t%.2lf\t%.2lf\t%.2lf\t%d\n", argv[1], width * height,
             (t4-t0),
             (t1-t0),
