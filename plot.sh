@@ -1,10 +1,11 @@
 #!/bin/sh
 
 f=1000
+cores=`head -1 openmp0.tsv | awk '{printf $8}'`
 
 gnuplot <<EOF
     set terminal png
-    set output "serial.png"
+    set output "areatime_linear.png"
     set xlabel "area [$f * pixel^2]"
     set ylabel "time [sec]"
     set key left top
@@ -15,12 +16,13 @@ gnuplot <<EOF
         "serial3.tsv" u (\$2/$f):(\$4+\$5) title "serial 3" with linespoints, \\
         "serial4.tsv" u (\$2/$f):(\$4+\$5) title "serial 4" with linespoints, \\
         "serial5.tsv" u (\$2/$f):(\$4+\$5) title "serial 5" with linespoints, \\
-        "openmp0.tsv" u (\$2/$f):(\$4+\$5) title "openmp 0" with linespoints
+        "openmp0.tsv" u (\$2/$f):(\$4+\$5) title "openmp 0 ($cores)" with linespoints, \\
+        "openmp1.tsv" u (\$2/$f):(\$4+\$5) title "openmp 1 ($cores)" with linespoints
 EOF
 
 gnuplot <<EOF
     set terminal png
-    set output "serial_log.png"
+    set output "areatime_log.png"
     set xlabel "area [log($f * pixel^2)]"
     set ylabel "time [log(sec)]"
     set logscale xy
@@ -32,5 +34,6 @@ gnuplot <<EOF
         "serial3.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 3" with linespoints, \\
         "serial4.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 4" with linespoints, \\
         "serial5.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "serial 5" with linespoints, \\
-        "openmp0.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "openmp 0" with linespoints
+        "openmp0.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "openmp 0 ($cores)" with linespoints, \\
+        "openmp1.tsv" u (\$2/$f):(\$4+\$5) every ::2 title "openmp 1 ($cores)" with linespoints
 EOF

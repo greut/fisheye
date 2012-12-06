@@ -18,7 +18,7 @@ for i in `seq 0 5`; do
     echo ""
 done
 
-for i in `seq 0 0`; do
+for i in `seq 0 1`; do
     echo OpenMP $i
     echo "---------"
     d=openmp$i
