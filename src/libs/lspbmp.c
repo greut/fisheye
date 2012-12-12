@@ -2,10 +2,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#ifndef WIN32
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -40,6 +42,7 @@ typedef struct BMInfo
     unsigned char ci0,ci1,ci2,ci3;          // Colours important
 } BMInfo;
 
+#ifndef WIN32
 Bitmap *loadBitmapMode(const char *fname, int o_mode)
 {
     BMHeader hd;
@@ -167,6 +170,7 @@ Bitmap *loadBitmapMode(const char *fname, int o_mode)
     }
     return out;
 }
+#endif
 
 /** Load bitmap from file */
 Bitmap *loadBitmap(const char *fname)
@@ -472,10 +476,14 @@ Bitmap *createBitmap(int w, int h, int d)
 
 void destroyBitmap(Bitmap *bmp)
 {
+#ifndef WIN32
     if(bmp->length != 0){
         munmap(bmp->mmap, bmp->length);
     }else{
+#endif
         free(bmp->data);
+#ifndef WIN32
     }
+#endif
     free(bmp);
 }

@@ -6,6 +6,10 @@
 
 #define COLORS 3
 
+#if defined WIN32
+inline double round(double x) { return floor(x + 0.5); }
+#endif
+
 static void
 fisheye(Bitmap* dst, const Bitmap* src) {
     geometry_t geometry = {
