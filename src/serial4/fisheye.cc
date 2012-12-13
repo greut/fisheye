@@ -175,7 +175,7 @@ main(int argc, const char** argv) {
     clock_t t2 = clock();
     fisheye_inplace_from_square_half_mask(img, mask, mask_width);
     clock_t t3 = clock();
-    clock_t saved = saveBitmap(argv[2], img);
+    int saved = saveBitmap(argv[2], img);
     free(mask);
     destroyBitmap(img);
     clock_t t4 = clock();

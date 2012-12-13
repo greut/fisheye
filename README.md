@@ -68,3 +68,11 @@ Built from Serial 5.
 
 Using the parallel work for creating the mask and doing the computation. `schedule`
 is set to `dynamic`.
+
+### MPI 0
+
+Built from Serial 4.
+
+Parallelize the mask computation and the file reading. Only the root reads the
+file and the mask computation is done by the others, each one computes one
+chunk of it (nothing fancy here).
