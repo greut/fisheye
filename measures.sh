@@ -37,3 +37,20 @@ for i in `seq 0 1`; do
     done
     echo ""
 done
+
+for i in `seq 0 0`; do
+    echo MPI $i
+    echo "------"
+    d=src/mpi$i
+    tsv=data/mpi$i.tsv
+    cd $d && make clean && make && cd ../..
+    rm -f $tsv
+    for img in $IMAGES; do
+        echo " $img"
+        time `mpiexec -n 3 $d/fisheye img/$img $TMP >> $tsv`
+        rm -f $TMP
+        echo ""
+        echo ""
+    done
+    echo ""
+done

@@ -215,7 +215,8 @@ main(int argc, char** argv) {
         t1 = MPI_Wtime();
         mask_size = mask_width * mask_width << 1;
         submask_size = (int) ceil(mask_width / (double) (gsize - 1)) * mask_width << 1;
-        mask = (double *) calloc(sizeof(double), mask_size);
+        // Over provision the mask
+        mask = (double *) calloc(sizeof(double), submask_size * (gsize - 1));
         submask = (double *) calloc(sizeof(double), submask_size);
         // We could use Gather here but we want to leverage the loadBitmap time
         for (int i = 1; i < gsize; i++) {
@@ -223,7 +224,6 @@ main(int argc, char** argv) {
             std::copy(submask, &submask[submask_size - 1], &mask[(status.MPI_SOURCE - 1) * submask_size]);
         }
         free(submask);
-
         t2 = MPI_Wtime();
         fisheye_inplace_from_square_half_mask(img, mask, mask_width);
         t3 = MPI_Wtime();
@@ -235,14 +235,8 @@ main(int argc, char** argv) {
         if (!saved) {
             std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
         } else {
-            std::cout << argv[1] << "\t";
-            std::cout << width * height << "\t";
-            std::cout << (t4-t0) << "\t";
-            std::cout << (t1-t0) << "\t";
-            std::cout << (t2-t1) << "\t";
-            std::cout << (t3-t2) << "\t";
-            std::cout << (t4-t3) << "\t";
-            std::cout << gsize << std::endl;
+            printf("%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%d\n", argv[1],
+                width * height, t4-t0, t1-t0, t2-t1, t3-t2, t4-t3, gsize);
         }
     }
     MPI_Finalize();

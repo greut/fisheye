@@ -3,6 +3,7 @@
 f=1000
 data="data"
 cores=`head -1 $data/openmp0.tsv | awk '{printf $8}'`
+nodes=`head -1 $data/mpi0.tsv | awk '{printf $8}'`
 
 gnuplot <<EOF
     set terminal png
@@ -59,7 +60,8 @@ gnuplot <<EOF
         "$data/serial5.tsv" u (\$2/$f):3 title "serial 5" with linespoints, \\
         "$data/serial6.tsv" u (\$2/$f):3 title "serial 6" with linespoints, \\
         "$data/openmp0.tsv" u (\$2/$f):3 title "openmp 0 ($cores)" with linespoints, \\
-        "$data/openmp1.tsv" u (\$2/$f):3 title "openmp 1 ($cores)" with linespoints
+        "$data/openmp1.tsv" u (\$2/$f):3 title "openmp 1 ($cores)" with linespoints, \\
+        "$data/mpi0.tsv" u (\$2/$f):3 title "mpi 0 ($nodes)" with linespoints
 EOF
 
 gnuplot <<EOF
@@ -79,5 +81,6 @@ gnuplot <<EOF
         "$data/serial5.tsv" u (\$2/$f):3 every ::2 title "serial 5" with linespoints, \\
         "$data/serial6.tsv" u (\$2/$f):3 every ::2 title "serial 6" with linespoints, \\
         "$data/openmp0.tsv" u (\$2/$f):3 every ::2 title "openmp 0 ($cores)" with linespoints, \\
-        "$data/openmp1.tsv" u (\$2/$f):3 every ::2 title "openmp 1 ($cores)" with linespoints
+        "$data/openmp1.tsv" u (\$2/$f):3 every ::2 title "openmp 1 ($cores)" with linespoints, \\
+        "$data/mpi0.tsv" u (\$2/$f):3 title "mpi 0 ($nodes)" with linespoints
 EOF
