@@ -123,7 +123,8 @@ fisheye_from_square_mask(Bitmap* dst, const Bitmap* src, const double* mask, dou
         for (x=0; x < width; x+=COLORS) {
             c->x = x / (double) COLORS;
             if (c->x >= x0 && c->y >= y0 &&
-                c->x < x0 + mask_width && c->y < y0 + mask_width) {
+                c->x < x0 + mask_width && c->y < y0 + mask_width
+            ) {
                 dv = &(mask[int(((c->y - y0) * mask_width + (c->x - x0)) * 2)]);
                 if (dv[0] != 0 || dv[1] != 0) {
                     nc = point_new(c->x + dv[0], c->y + dv[1]);

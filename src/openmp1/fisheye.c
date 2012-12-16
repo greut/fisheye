@@ -112,10 +112,10 @@ fisheye_from_square_half_mask(const Bitmap* src, Bitmap* dst, double* mask, unsi
 
     double* dv;
     if (width / 2 > mask_width) {
-        x0 = max(zero, ((width / 2) - mask_width));
+        x0 = max(zero, ((int) ceil(width / 2.) - mask_width));
     }
     if (height / 2 > mask_width) {
-        y0 = max(zero, ((height / 2) - mask_width));
+        y0 = max(zero, ((int) ceil(height / 2.) - mask_width));
     }
 #if defined (_OPENMP)
 #pragma omp parallel default(none) \
@@ -127,7 +127,7 @@ fisheye_from_square_half_mask(const Bitmap* src, Bitmap* dst, double* mask, unsi
     for (y = 0; y < mask_width; y++) {
         point_t *c = point_new(0, 0), *r = point_new(0, 0);
         c->y = y + y0;
-        r->y = width - ycorr - (y + y0);
+        r->y = height - ycorr - (y + y0);
         yy = y * mask_width << 1;
         sy = (y + y0) * width * COLORS;
         swy = (height - 1 - y - y0) * width * COLORS;

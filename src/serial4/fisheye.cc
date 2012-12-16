@@ -100,15 +100,15 @@ fisheye_inplace_from_square_half_mask(Bitmap* img, double* mask, unsigned int ma
 
     double* dv;
     if (width / 2 > mask_width) {
-        x0 = std::max(zero, ((width / 2) - mask_width));
+        x0 = std::max(zero, ((int) ceil(width / 2.) - mask_width));
     }
     if (height / 2 > mask_width) {
-        y0 = std::max(zero, ((height / 2) - mask_width));
+        y0 = std::max(zero, ((int) ceil(height / 2.) - mask_width));
     }
 
     for (y = 0; y < mask_width; y++) {
         c->y = y + y0;
-        r->y = width - ycorr - (y + y0);
+        r->y = height - ycorr - (y + y0);
         yy = y * mask_width << 1;
         for (x = 0; x < mask_width; x++) {
             dv = &(mask[yy + (x << 1)]);

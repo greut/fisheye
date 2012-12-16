@@ -11,7 +11,7 @@ inline double round(double x) { return floor(x + 0.5); }
 #endif
 
 static void
-fisheye(Bitmap* dst, const Bitmap* src) {
+fisheye(Bitmap* dst, const Bitmap* src, double radius, double m) {
     geometry_t geometry = {
         src->width, src->height,
         {round(src->width/2.), round(src->height/2.)}};
@@ -19,9 +19,7 @@ fisheye(Bitmap* dst, const Bitmap* src) {
     int x, y, nx, ny,
         height = src->height,
         width = src->width * COLORS;
-    double radius = (src->height < src->width ? src->height : src->width) * .45,
-           m = 5.0,
-           dx, dy, r0, g0, b0, r1, g1, b1, r, g, b;
+    double dx, dy, r0, g0, b0, r1, g1, b1, r, g, b;
     const unsigned char *data, *data0, *data1;
     unsigned char *to;
     for (y=0; y < height; y++) {
@@ -83,6 +81,22 @@ main(int argc, const char** argv) {
     }
     unsigned int width = src->width,
                  height = src->height;
+    double radius = std::min(height, width) * .45,
+           magnify_factor = 5.0;
+    if (argc > 3) {
+        sscanf(argv[3], "%lf", &radius);
+        if (radius <= 0) {
+            std::cerr << "Radius cannot be null or negative" << std::endl;
+            return 1;
+        }
+    }
+    if (argc > 4) {
+        sscanf(argv[4], "%lf", &magnify_factor);
+        if (magnify_factor < 1) {
+            std::cerr << "Less than 1 magnify lens are not supported" << std::endl;
+            return 1;
+        }
+    }
     clock_t t1 = clock();
     Bitmap* dst = createBitmap(width, height, 24);
     if (dst == NULL) {
@@ -90,7 +104,7 @@ main(int argc, const char** argv) {
         free(src);
         return 1;
     }
-    fisheye(dst, src);
+    fisheye(dst, src, radius, magnify_factor);
     clock_t t2 = clock();
     clock_t saved = saveBitmap(argv[2], dst);
     destroyBitmap(src);

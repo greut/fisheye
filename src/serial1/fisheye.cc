@@ -42,15 +42,13 @@
 //
 //             Y
 
-void fisheye_mask(double * mask, int width, int height) {
+void fisheye_mask(double * mask, int width, int height, double radius, double m) {
     geometry_t g = {
         width, height,
         {round(width/2.), round(height/2.)}};
     point_t *c = point_new(0., 0.);
     int x, y;
-    double radius = (height < width ? height : width) * .45,
-           m = 5.0,
-           dx, dy;
+    double dx, dy;
     // Pre calculate the new position
     for (y=0; y <= ceil(height / 2.); y++) {
         c->y = y;
@@ -163,7 +161,23 @@ main(int argc, const char** argv) {
         free(src);
         return 1;
     }
-    fisheye_mask(mask, width, height);
+    double radius = std::min(height, width) * .45,
+           magnify_factor = 5.0;
+    if (argc > 3) {
+        sscanf(argv[3], "%lf", &radius);
+        if (radius <= 0) {
+            std::cerr << "Radius cannot be null or negative" << std::endl;
+            return 1;
+        }
+    }
+    if (argc > 4) {
+        sscanf(argv[4], "%lf", &magnify_factor);
+        if (magnify_factor < 1) {
+            std::cerr << "Less than 1 magnify lens are not supported" << std::endl;
+            return 1;
+        }
+    }
+    fisheye_mask(mask, width, height, radius, magnify_factor);
     clock_t t2 = clock();
     fisheye_from_mask(dst, src, mask);
     clock_t t3 = clock();

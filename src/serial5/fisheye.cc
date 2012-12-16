@@ -102,15 +102,15 @@ fisheye_from_square_half_mask(const Bitmap* src, Bitmap* dst, double* mask, unsi
 
     double* dv;
     if (width / 2 > mask_width) {
-        x0 = std::max(zero, ((width / 2) - mask_width));
+        x0 = std::max(zero, ((int) ceil(width / 2.) - mask_width));
     }
     if (height / 2 > mask_width) {
-        y0 = std::max(zero, ((height / 2) - mask_width));
+        y0 = std::max(zero, ((int) ceil(height / 2.) - mask_width));
     }
 
     for (y = 0; y < mask_width; y++) {
         c->y = y + y0;
-        r->y = width - ycorr - (y + y0);
+        r->y = height - ycorr - (y + y0);
         yy = y * mask_width << 1;
         sy = (y + y0) * width * COLORS;
         swy = (height - 1 - y - y0) * width * COLORS;
