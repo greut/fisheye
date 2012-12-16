@@ -76,3 +76,17 @@ Built from Serial 4.
 Parallelize the mask computation and the file reading. Only the root reads the
 file and the mask computation is done by the others, each one computes one
 chunk of it (nothing fancy here).
+
+### MPI 1
+
+Built from Serial 5.
+
+Parallelize the image computation. The mask is calculated independently by each
+node as the operation is relatively cheap compared to any requied communication.
+The image is slit in 4 parts (8 being slightly harder).
+
+### MPI 2
+
+Combination of MPI 0 and MPI 1.
+
+The calculation of the mask and the computation are shared by the nodes.

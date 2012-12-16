@@ -38,7 +38,7 @@ for i in `seq 0 1`; do
     echo ""
 done
 
-for i in `seq 0 0`; do
+for i in `seq 0 1`; do
     echo MPI $i
     echo "------"
     d=src/mpi$i
