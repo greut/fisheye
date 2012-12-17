@@ -47,7 +47,7 @@ for i in `seq 0 0`; do
     rm -f $tsv
     for img in $IMAGES; do
         echo " $img"
-        time `mpiexec -n 3 $d/fisheye img/$img $TMP >> $tsv`
+        time `mpiexec -mapall -n 3 -machinefile machines.txt $d/fisheye img/$img $TMP >> $tsv`
         rm -f $TMP
         echo ""
         echo ""

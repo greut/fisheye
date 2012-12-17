@@ -1,7 +1,3 @@
-#if _MSC_VER >= 1400 // If we are using VS 2005 or greater
-#define _CRT_SECURE_NO_WARNINGS
-#endif
-
 #ifndef WIN32
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -315,17 +311,17 @@ Bitmap *loadBitmapHeaderOnly(const char *fname)
     int x,w,h;
     Bitmap *out;
     FILE *fptr;
-
+	
     if(fname==NULL)
     {
-        printf("loadBitmap: NULL filename\n");
+        printf("loadBitmapHeaderOnly: NULL filename\n");
         return NULL;
     }
 
     fptr=fopen(fname,"rb");
     if(fptr==NULL)
     {
-        printf("loadBitmap: Could not open '%s'\n",fname);
+        printf("loadBitmapHeaderOnly: Could not open '%s'\n",fname);
         return NULL;
     }
 
@@ -334,12 +330,12 @@ Bitmap *loadBitmapHeaderOnly(const char *fname)
 
     if(hd.b!='B' || hd.m!='M')
     {
-        printf("loadBitmap: Invalid file type in '%s'\n",fname);
+        printf("loadBitmapHeaderOnly: Invalid file type in '%s'\n",fname);
         return NULL;
     }
     if(nf.cs0!=sizeof(nf))
     {
-        printf("loadBitmap: Unknown file format in '%s'\n",fname);
+        printf("loadBitmapHeaderOnly: Unknown file format in '%s'\n",fname);
         return NULL;
     }
     if(nf.bits0==8)
@@ -352,7 +348,7 @@ Bitmap *loadBitmapHeaderOnly(const char *fname)
             cu=256;
         if(cu>256)
         {
-            printf("loadBitmap: Too many palette colors in '%s'\n",fname);
+            printf("loadBitmapHeaderOnly: Too many palette colors in '%s'\n",fname);
             return NULL;
         }
         fread(pal,cu,4,fptr);
@@ -365,7 +361,7 @@ Bitmap *loadBitmapHeaderOnly(const char *fname)
     }
     else if(nf.bits0!=24 && nf.bits0!=32)
     {
-        printf("loadBitmap: Cannot handle %d bpp in '%s'\n",nf.bits0,fname);
+        printf("loadBitmapHeaderOnly: Cannot handle %d bpp in '%s'\n",nf.bits0,fname);
         return NULL;
     }
 
@@ -376,6 +372,10 @@ Bitmap *loadBitmapHeaderOnly(const char *fname)
     h=nf.h0+(nf.h1<<8)+(nf.h2<<16)+(nf.h3<<24);
 
     out=(Bitmap*)malloc(sizeof(Bitmap));
+	if(out == NULL) {
+		printf("loadBitmapHeaderOnly: Cannot allocate bitmap\n");
+		return NULL;
+	}
     out->width=w;
     out->height=h;
     out->depth=mode==0?24:8;

@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
@@ -8,6 +7,7 @@
 #include "magnify.h"
 
 #define COLORS 3
+#define LEN 100
 
 void fisheye_square_half_mask_rank(double * mask, int width, double r, double m, int rank, int size) {
     geometry_t g = {
@@ -20,7 +20,7 @@ void fisheye_square_half_mask_rank(double * mask, int width, double r, double m,
     int x, y, x2, ycol, y0, y1, chunksize;
     double dx, dy,
         shift = r - width;
-    chunksize = ceil(width / (double) (size - 1));
+    chunksize = (int) ceil(width / (double) (size - 1));
     y0 = (rank - 1) * chunksize;
     y1 = std::min(width, rank * chunksize);
     for (y=y0; y < y1; y++) {
@@ -52,16 +52,16 @@ void
 fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     double dx, dy, idx, idy, r0, g0, b0, r1, g1, b1;
     unsigned int nx, ny, mx, my,
-        x = c->x * COLORS,
+        x = (int) c->x * COLORS,
         width = img->width * COLORS;
     unsigned char *data0, *data1, *to, r, g, b;
     double cx = c->x + dv[0],
         cy = c->y + dv[1];
 
-    nx = floor(cx);
-    ny = floor(cy);
-    mx = ceil(cx);
-    my = ceil(cy);
+    nx = (int) floor(cx);
+    ny = (int) floor(cy);
+    mx = (int) ceil(cx);
+    my = (int) ceil(cy);
     dx = cx - nx;
     dy = cy - ny;
     idx = 1 - dx;
@@ -80,9 +80,9 @@ fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     g1 = idx * data1[nx + 1] + dx * data1[mx + 1];
     b1 = idx * data1[nx + 2] + dx * data1[mx + 2];
     // final points
-    r = idy * r0 + dy * r1;
-    g = idy * g0 + dy * g1;
-    b = idy * b0 + dy * b1;
+    r = (unsigned char) (idy * r0 + dy * r1);
+    g = (unsigned char) (idy * g0 + dy * g1);
+    b = (unsigned char) (idy * b0 + dy * b1);
     to[x] = r;
     to[x + 1] = g;
     to[x + 2] = b;
@@ -141,10 +141,17 @@ fisheye_inplace_from_square_half_mask(Bitmap* img, double* mask, unsigned int ma
 
 int
 main(int argc, char** argv) {
-    int rank, gsize, saved = 1;
+    int rank, gsize, provided, saved = 1;
     MPI_Status status;
     MPI_Comm comm = MPI_COMM_WORLD;
-    MPI_Init(&argc, &argv);
+    if (MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided)) {
+		std::cerr << "MPI Initialization error" << std::cerr;
+		return 1;
+	}
+	if (provided != MPI_THREAD_MULTIPLE) {
+		std::cerr << "MPI must be multithreaded" << std::cerr;
+		return 1;
+	}
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &gsize);
 
@@ -152,7 +159,6 @@ main(int argc, char** argv) {
     double *mask = NULL, *submask = NULL;
     double radius, magnify_factor;
 
-#define LEN 100
     char packbuf[LEN];
     int packsize, position;
 
@@ -162,10 +168,16 @@ main(int argc, char** argv) {
     if (rank == 0) {
         if (argc < 3) {
             std::cerr << "Usage: " << argv[0] << " source dest"<< std::endl;
+			MPI_Abort(comm, 1);
             return 1;
         }
         t0 = MPI_Wtime();
         img = loadBitmapHeaderOnly(argv[1]);
+		if (img == NULL){
+			std::cerr << "Cannot load " << argv[1] << std::endl;
+			MPI_Abort(comm, 2);
+			return 1;
+		}
         width = img->width;
         height = img->height;
         radius = std::min(height, width) * .45;
@@ -174,6 +186,7 @@ main(int argc, char** argv) {
             sscanf(argv[3], "%lf", &radius);
             if (radius <= 0) {
                 std::cerr << "Radius cannot be null or negative" << std::endl;
+				MPI_Abort(comm, 1);
                 return 1;
             }
         }
@@ -181,11 +194,11 @@ main(int argc, char** argv) {
             sscanf(argv[4], "%lf", &magnify_factor);
             if (magnify_factor < 1) {
                 std::cerr << "Less than 1 magnify lens are not supported" << std::endl;
+				MPI_Abort(comm, 1);
                 return 1;
             }
         }
-        mask_width = ceil(std::min(std::min(width, height)/2., radius));
-
+        mask_width = (int) ceil(std::min(std::min(width, height)/2., radius));
         packsize = 0;
         MPI_Pack(&mask_width, 1, MPI_INT, packbuf, LEN, &packsize, comm);
         MPI_Pack(&radius, 1, MPI_DOUBLE, packbuf, LEN, &packsize, comm);
@@ -194,7 +207,7 @@ main(int argc, char** argv) {
 
     MPI_Bcast(&packsize, 1, MPI_INT, 0, comm);
     MPI_Bcast(packbuf, packsize, MPI_PACKED, 0, comm);
-
+	
     if (rank > 0) {
         position = 0;
         MPI_Unpack(packbuf, packsize, &position, &mask_width, 1, MPI_INT, comm);
@@ -207,12 +220,20 @@ main(int argc, char** argv) {
         MPI_Send(submask, submask_size, MPI_DOUBLE, 0, 0, comm);
         free(submask);
     }
-
+	
     if (rank == 0) {
         // load the whole file this time.
         destroyBitmap(img);
         img = loadBitmap(argv[1]);
+		if (img == NULL) {
+			free(mask);
+			std::cerr << "Cannot load " << argv[1] << std::endl;
+			MPI_Abort(MPI_COMM_WORLD, 1);
+			return 1;
+		}
         t1 = MPI_Wtime();
+
+		// Joining the mask parts
         mask_size = mask_width * mask_width << 1;
         submask_size = (int) ceil(mask_width / (double) (gsize - 1)) * mask_width << 1;
         // Over provision the mask
@@ -225,8 +246,12 @@ main(int argc, char** argv) {
         }
         free(submask);
         t2 = MPI_Wtime();
+
+		// Applying the mask
         fisheye_inplace_from_square_half_mask(img, mask, mask_width);
         t3 = MPI_Wtime();
+
+		// Saving the file
         saved = saveBitmap(argv[2], img);
         free(mask);
         destroyBitmap(img);
@@ -235,10 +260,20 @@ main(int argc, char** argv) {
         if (!saved) {
             std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
         } else {
-            printf("%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%d\n", argv[1],
+			char *cout = (char *) calloc(sizeof(char), LEN);
+			cout[LEN-1] = '\0';
+			sprintf(cout, "%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%d\n", argv[1],
                 width * height, t4-t0, t1-t0, t2-t1, t3-t2, t4-t3, gsize);
+			std::cout << cout << std::endl;
         }
     }
+	// Wait and kill everybody!!
+	MPI_Barrier(comm);
+	if (rank == 0) {
+		std::cout << "Done! Press Ctrl+C if it doesn't end gracefully" << std::endl;
+	}
+	//MPI_Abort(comm, 0);
+	// This would hang!
     MPI_Finalize();
     return !saved;
 }
