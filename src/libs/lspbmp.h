@@ -8,10 +8,10 @@ extern "C"
 
 typedef struct Bitmap
 {
-	int width;
-	int height;
-	int depth;
-	unsigned char *data;
+    int width;
+    int height;
+    int depth;
+    unsigned char *data;
     // mmap
     size_t length;
     unsigned char *mmap;

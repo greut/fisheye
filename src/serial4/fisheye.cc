@@ -131,7 +131,6 @@ fisheye_inplace_from_square_half_mask(Bitmap* img, double* mask, unsigned int ma
                 // South-West
                 r->x = x + x0;
                 fisheye_inplace_sub(img, r, dv);
-                dv[1] = -dv[1];
             }
         }
     }

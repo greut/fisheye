@@ -145,13 +145,13 @@ main(int argc, char** argv) {
     MPI_Status status;
     MPI_Comm comm = MPI_COMM_WORLD;
     if (MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided)) {
-		std::cerr << "MPI Initialization error" << std::cerr;
-		return 1;
-	}
-	if (provided != MPI_THREAD_MULTIPLE) {
-		std::cerr << "MPI must be multithreaded" << std::cerr;
-		return 1;
-	}
+        std::cerr << "MPI Initialization error" << std::cerr;
+        return 1;
+    }
+    if (provided != MPI_THREAD_MULTIPLE) {
+        std::cerr << "MPI must be multithreaded" << std::cerr;
+        return 1;
+    }
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &gsize);
 
@@ -168,16 +168,16 @@ main(int argc, char** argv) {
     if (rank == 0) {
         if (argc < 3) {
             std::cerr << "Usage: " << argv[0] << " source dest"<< std::endl;
-			MPI_Abort(comm, 1);
+            MPI_Abort(comm, 1);
             return 1;
         }
         t0 = MPI_Wtime();
         img = loadBitmapHeaderOnly(argv[1]);
-		if (img == NULL){
-			std::cerr << "Cannot load " << argv[1] << std::endl;
-			MPI_Abort(comm, 2);
-			return 1;
-		}
+        if (img == NULL){
+            std::cerr << "Cannot load " << argv[1] << std::endl;
+            MPI_Abort(comm, 2);
+            return 1;
+        }
         width = img->width;
         height = img->height;
         radius = std::min(height, width) * .45;
@@ -186,7 +186,7 @@ main(int argc, char** argv) {
             sscanf(argv[3], "%lf", &radius);
             if (radius <= 0) {
                 std::cerr << "Radius cannot be null or negative" << std::endl;
-				MPI_Abort(comm, 1);
+                MPI_Abort(comm, 1);
                 return 1;
             }
         }
@@ -194,7 +194,7 @@ main(int argc, char** argv) {
             sscanf(argv[4], "%lf", &magnify_factor);
             if (magnify_factor < 1) {
                 std::cerr << "Less than 1 magnify lens are not supported" << std::endl;
-				MPI_Abort(comm, 1);
+                MPI_Abort(comm, 1);
                 return 1;
             }
         }
@@ -207,7 +207,7 @@ main(int argc, char** argv) {
 
     MPI_Bcast(&packsize, 1, MPI_INT, 0, comm);
     MPI_Bcast(packbuf, packsize, MPI_PACKED, 0, comm);
-	
+
     if (rank > 0) {
         position = 0;
         MPI_Unpack(packbuf, packsize, &position, &mask_width, 1, MPI_INT, comm);
@@ -220,20 +220,20 @@ main(int argc, char** argv) {
         MPI_Send(submask, submask_size, MPI_DOUBLE, 0, 0, comm);
         free(submask);
     }
-	
+
     if (rank == 0) {
         // load the whole file this time.
         destroyBitmap(img);
         img = loadBitmap(argv[1]);
-		if (img == NULL) {
-			free(mask);
-			std::cerr << "Cannot load " << argv[1] << std::endl;
-			MPI_Abort(MPI_COMM_WORLD, 1);
-			return 1;
-		}
+        if (img == NULL) {
+            free(mask);
+            std::cerr << "Cannot load " << argv[1] << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);
+            return 1;
+        }
         t1 = MPI_Wtime();
 
-		// Joining the mask parts
+        // Joining the mask parts
         mask_size = mask_width * mask_width << 1;
         submask_size = (int) ceil(mask_width / (double) (gsize - 1)) * mask_width << 1;
         // Over provision the mask
@@ -242,16 +242,17 @@ main(int argc, char** argv) {
         // We could use Gather here but we want to leverage the loadBitmap time
         for (int i = 1; i < gsize; i++) {
             MPI_Recv(submask, submask_size, MPI_DOUBLE, MPI_ANY_SOURCE, 0, comm, &status);
-            std::copy(submask, &submask[submask_size - 1], &mask[(status.MPI_SOURCE - 1) * submask_size]);
+            std::copy(submask, &submask[submask_size - 1],
+                    &mask[(status.MPI_SOURCE - 1) * submask_size]);
         }
         free(submask);
         t2 = MPI_Wtime();
 
-		// Applying the mask
+        // Applying the mask
         fisheye_inplace_from_square_half_mask(img, mask, mask_width);
         t3 = MPI_Wtime();
 
-		// Saving the file
+        // Saving the file
         saved = saveBitmap(argv[2], img);
         free(mask);
         destroyBitmap(img);
@@ -260,20 +261,20 @@ main(int argc, char** argv) {
         if (!saved) {
             std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
         } else {
-			char *cout = (char *) calloc(sizeof(char), LEN);
-			cout[LEN-1] = '\0';
-			sprintf(cout, "%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%d\n", argv[1],
+            char *cout = (char *) calloc(sizeof(char), LEN);
+            cout[LEN-1] = '\0';
+            sprintf(cout, "%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%d\n", argv[1],
                 width * height, t4-t0, t1-t0, t2-t1, t3-t2, t4-t3, gsize);
-			std::cout << cout << std::endl;
+            std::cout << cout << std::endl;
         }
     }
-	// Wait and kill everybody!!
-	MPI_Barrier(comm);
-	if (rank == 0) {
-		std::cout << "Done! Press Ctrl+C if it doesn't end gracefully" << std::endl;
-	}
-	//MPI_Abort(comm, 0);
-	// This would hang!
+    // Wait and kill everybody!!
+    MPI_Barrier(comm);
+    if (rank == 0) {
+        std::cout << "Done! Press Ctrl+C if it doesn't end gracefully" << std::endl;
+    }
+    //MPI_Abort(comm, 0);
+    // This would hang!
     MPI_Finalize();
     return !saved;
 }

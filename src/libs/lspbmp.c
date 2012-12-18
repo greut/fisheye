@@ -311,7 +311,7 @@ Bitmap *loadBitmapHeaderOnly(const char *fname)
     int x,w,h;
     Bitmap *out;
     FILE *fptr;
-	
+
     if(fname==NULL)
     {
         printf("loadBitmapHeaderOnly: NULL filename\n");
@@ -372,10 +372,10 @@ Bitmap *loadBitmapHeaderOnly(const char *fname)
     h=nf.h0+(nf.h1<<8)+(nf.h2<<16)+(nf.h3<<24);
 
     out=(Bitmap*)malloc(sizeof(Bitmap));
-	if(out == NULL) {
-		printf("loadBitmapHeaderOnly: Cannot allocate bitmap\n");
-		return NULL;
-	}
+    if(out == NULL) {
+        printf("loadBitmapHeaderOnly: Cannot allocate bitmap\n");
+        return NULL;
+    }
     out->width=w;
     out->height=h;
     out->depth=mode==0?24:8;

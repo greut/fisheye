@@ -16,15 +16,15 @@ void fisheye_square_half_mask(double * mask, int width, double r, double m) {
     point_t *c = point_new(0., 0.), *nc;
     polar_t *p, *np;
     int x, y, x2, y2, ycol, xcol;
-    double dx, dy,
-        shift = r - width;
+    double dx, dy;
     for (y=0; y < width; y++) {
-        c->y = (double) y + shift;
+        c->y = (double) y;
         ycol = y * width << 1;
         y2 = y << 1;
         for (x = y; x < width; x++) {
-            c->x = (double) x + shift;
+            c->x = (double) x;
             p = geometry_polar_from_point(&g, c);
+
             if (p->r < r) {
                 np = unmagnify(p, r, m);
                 nc = geometry_point_from_polar(&g, np);
@@ -90,48 +90,46 @@ fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
 }
 
 void
-fisheye_inplace_from_square_half_mask(Bitmap* img, double* mask, unsigned int mask_width) {
+fisheye_inplace_from_square_half_mask_with_quadrant(Bitmap* img, double* mask,
+        unsigned int mask_width, unsigned int quadrant) {
     point_t *c = point_new(0, 0), *r = point_new(0, 0);
-    unsigned int x, y, x0 = 0, y0 = 0, yy, zero = 0,
+    unsigned int x, y, yy,
         width = img->width,
-        height = img->height,
-        ycorr = height % 2 ? 0 : 1,
-        xcorr = width % 2 ? 0 : 1;
+        height = img->height;
 
     double* dv;
-    if (width / 2 > mask_width) {
-        x0 = std::max(zero, ((int) ceil(width / 2.) - mask_width));
-    }
-    if (height / 2 > mask_width) {
-        y0 = std::max(zero, ((int) ceil(height / 2.) - mask_width));
-    }
-
-    for (y = 0; y < mask_width; y++) {
-        c->y = y + y0;
-        r->y = height - ycorr - (y + y0);
+    for (y = 0; y < height; y++) {
+        c->y = y;
+        r->y = height - 1 - y;
         yy = y * mask_width << 1;
-        for (x = 0; x < mask_width; x++) {
+        for (x = 0; x < width; x++) {
             dv = &(mask[yy + (x << 1)]);
             if (dv[0] != 0 || dv[1] != 0) {
-                // North-West
-                c->x = x + x0;
-                fisheye_inplace_sub(img, c, dv);
-
+                // FIXME
+                //if (quadrant == 0) {
+                    c->x = x;
+                    fisheye_inplace_sub(img, c, dv);
+                //}
                 // North-East
-                dv[0] = -dv[0];
-                c->x = width - xcorr - (x + x0);
-                fisheye_inplace_sub(img, c, dv);
-
+                /*if (quadrant == 3) {
+                    dv[0] = -dv[0];
+                    c->x = width - 1 - x;
+                    fisheye_inplace_sub(img, c, dv);
+                }
                 // South-East
-                dv[1] = -dv[1];
-                r->x = width - xcorr - (x + x0);
-                fisheye_inplace_sub(img, r, dv);
-                dv[0] = -dv[0];
-
+                if (quadrant == 2) {
+                    dv[0] = -dv[0];
+                    dv[1] = -dv[1];
+                    r->x = width - 1 - x;
+                    fisheye_inplace_sub(img, r, dv);
+                }
                 // South-West
-                r->x = x + x0;
-                fisheye_inplace_sub(img, r, dv);
-                dv[1] = -dv[1];
+                if (quadrant == 1) {
+                    dv[1] = -dv[1];
+                    r->x = x;
+                    fisheye_inplace_sub(img, r, dv);
+                }
+                */
             }
         }
     }
@@ -140,23 +138,27 @@ fisheye_inplace_from_square_half_mask(Bitmap* img, double* mask, unsigned int ma
     free(r);
 }
 
+#define TOTAL 4 // number of quadrant
+#define LEN 100 // size of the buffer
+
 int
 main(int argc, char** argv) {
-    int rank, gsize, saved = 1;
+    int rank, gsize, saved=1;
     MPI_Status status;
+    MPI_Request requests[2 * TOTAL];
     MPI_Comm comm = MPI_COMM_WORLD;
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &gsize);
 
-#define LEN 100
     char packbuf[LEN];
     int packsize, position, len;
 
     Bitmap *img;
     double radius, magnify_factor;
     double *mask;
-    unsigned int mask_width, mask_size, width, height, depth, x0, y0, zero = 0;
+    unsigned int mask_width, mask_size, width, height, depth, x0, y0,
+        quadrant, zero=0;
     unsigned char *buf;
 
     double t0, t1, t2, t3, t4;
@@ -169,6 +171,10 @@ main(int argc, char** argv) {
 
         t0 = MPI_Wtime();
         img = loadBitmapHeaderOnly(argv[1]);
+        if (img == NULL) {
+            MPI_Abort(comm, 1);
+            return 1;
+        }
         width = img->width,
         height = img->height;
         depth = img->depth;
@@ -208,24 +214,77 @@ main(int argc, char** argv) {
 
     if (rank == 0) {
         Bitmap* img = loadBitmap(argv[1]);
-        t1 = MPI_Wtime();
-        len = 4 * mask_width * mask_width * COLORS;
-        std::cerr << len << " - " << mask_size << std::endl;
-        buf = (unsigned char *) calloc(sizeof(unsigned char), len);
-        x0 = std::max(zero, ((int) ceil(width / 2.) - mask_width));
-        y0 = std::max(zero, ((int) ceil(height / 2.) - mask_width));
-        for(unsigned int y = y0; y < (y0 + 2 * mask_width); y++) {
-            std::cerr << y << "/" << height << std::endl;
-            std::copy(
-                &(img->data[(y * width + x0) * COLORS]),
-                &(img->data[((y * width) + x0 + (2 * mask_width)) * COLORS]),
-                &(buf[((y - y0) * 2 * mask_width) * COLORS]));
+        if (img == NULL) {
+            MPI_Abort(comm, 1);
+            return 1;
         }
-        MPI_Send(buf, len, MPI_CHAR, 1, 0, comm);
+        //saveBitmap("2.bmp", img);
+        t1 = MPI_Wtime();
+        // Divide the picture in 4.
+        // 0 | 3
+        // --+--
+        // 1 | 2
+        len = mask_width * mask_width * COLORS;
+        unsigned int y, w2, h2;
+        unsigned char *buf0, *buf1;
+        buf0 = (unsigned char *) calloc(sizeof(unsigned char), len);
+        buf1 = (unsigned char *) calloc(sizeof(unsigned char), len);
+
+        w2 = (int) ceil(width / 2.);
+        h2 = (int) ceil(height / 2.);
+
+        x0 = std::max(zero, w2 - mask_width);
+        y0 = std::max(zero, h2 - mask_width);
+
+        for(y = 0; y < mask_width; y++) {
+            std::copy(
+                &(img->data[((y + y0) * width + x0) * COLORS]),
+                &(img->data[(((y + y0) * width) + x0 + mask_width + 1) * COLORS - 1]),
+                &(buf0[y * mask_width * COLORS]));
+            std::copy(
+                &(img->data[((y + y0) * width + x0 + mask_width) * COLORS]),
+                &(img->data[(((y + y0) * width) + x0 + 2 * mask_width + 1) * COLORS - 1]),
+                &(buf1[y * mask_width * COLORS]));
+        }
+        int to, req = 0;
+        quadrant = 0;
+        to = (quadrant % (gsize - 1)) + 1;
+        //std::cerr << rank << " sending to " << to << " data: " << len << std::endl;
+        MPI_Isend(&quadrant, 1, MPI_INT, to, 0, comm, &(requests[req++]));
+        MPI_Isend(buf0, len, MPI_CHAR, to, 1, comm, &(requests[req++]));
+        quadrant = 3;
+        to = (quadrant % (gsize - 1)) + 1;
+        //std::cerr << rank << " sending to " << to << std::endl;
+        MPI_Isend(&quadrant, 1, MPI_INT, to, 0, comm, &requests[req++]);
+        MPI_Isend(buf1, len, MPI_CHAR, to, 1, comm, &requests[req++]);
+        for(y = mask_width; y < 2 * mask_width; y++) {
+            std::copy(
+                &(img->data[((y + y0) * width + x0) * COLORS]),
+                &(img->data[(((y + y0) * width) + x0 + mask_width + 1) * COLORS - 1]),
+                &(buf0[(y - mask_width) * mask_width * COLORS]));
+            std::copy(
+                &(img->data[((y + y0) * width + x0 + mask_width) * COLORS]),
+                &(img->data[(((y + y0) * width) + x0 + 2 * mask_width + 1) * COLORS - 1]),
+                &(buf1[(y - mask_width) * mask_width * COLORS]));
+        }
+
+        quadrant = 1;
+        to = (quadrant % (gsize - 1)) + 1;
+        //std::cerr << rank << " sending to " << to << std::endl;
+        MPI_Isend(&quadrant, 1, MPI_INT, to, 0, comm, &requests[req++]);
+        MPI_Isend(buf0, len, MPI_CHAR, to, 1, comm, &requests[req++]);
+        quadrant = 2;
+        to = (quadrant % (gsize - 1)) + 1;
+        //std::cerr << rank << " sending to " << to << std::endl;
+        MPI_Isend(&quadrant, 1, MPI_INT, to, 0, comm, &requests[req++]);
+        MPI_Isend(buf1, len, MPI_CHAR, to, 1, comm, &requests[req++]);
+
+        free(buf0);
+        free(buf1);
         t2 = MPI_Wtime();
     }
 
-    if (rank > 0) {
+    if (rank > 0 && rank <= TOTAL) {
         position = 0;
         MPI_Unpack(packbuf, packsize, &position, &width, 1, MPI_INT, comm);
         MPI_Unpack(packbuf, packsize, &position, &height, 1, MPI_INT, comm);
@@ -234,32 +293,68 @@ main(int argc, char** argv) {
         MPI_Unpack(packbuf, packsize, &position, &radius, 1, MPI_DOUBLE, comm);
         MPI_Unpack(packbuf, packsize, &position, &magnify_factor, 1, MPI_DOUBLE, comm);
 
-        len = 4 * mask_width * mask_width * COLORS;
+        len = mask_width * mask_width * COLORS;
         mask_size = mask_width * mask_width << 1;
         mask = (double *) calloc(sizeof(double), mask_size);
 
         fisheye_square_half_mask(mask, mask_width, radius, magnify_factor);
 
-        img = createBitmap(2 * mask_width, 2 * mask_width, depth);
-        MPI_Recv(img->data, len, MPI_CHAR, 0, 0, comm, &status);
+        img = createBitmap(mask_width, mask_width, depth);
 
-        fisheye_inplace_from_square_half_mask(img, mask, mask_width);
-        saveBitmap("tmp.bmp", img);
+        for (int i=0; i < TOTAL; i += (gsize - 1)) {
+            //std::cerr << rank << ": ready" << std::endl;
+            MPI_Recv(&quadrant, 1, MPI_INT, 0, 0, comm, &status);
+            MPI_Recv(img->data, len, MPI_CHAR, 0, 1, comm, &status);
+            //std::cerr << rank << ": got " << quadrant << " data: " << len << std::endl;
 
-        MPI_Send(img->data, len, MPI_CHAR, 0, 0, comm);
+            fisheye_inplace_from_square_half_mask_with_quadrant(img, mask, mask_width, quadrant);
+            // DEBUG
+            //char *foo = (char *)calloc(sizeof(char), 20);
+            //sprintf(foo, "tmp%d.bmp", quadrant);
+            //saveBitmap(foo, img);
 
+            MPI_Isend(&quadrant, 1, MPI_INT, 0, 0, comm, &(requests[2*i]));
+            MPI_Isend(img->data, len, MPI_CHAR, 0, 1, comm, &(requests[2*i+1]));
+        }
+        for (int i=0; i < TOTAL; i += (gsize - 1)) {
+            MPI_Wait(&(requests[2*i]), &status);
+            MPI_Wait(&(requests[2*i+1]), &status);
+        }
         free(mask);
         destroyBitmap(img);
     }
 
     if (rank == 0) {
-        MPI_Recv(buf, len, MPI_CHAR, 1, 0, comm, &status);
-        for(unsigned int y = y0; y < y0 + 2 * mask_width; y++) {
-            std::copy(
-                &(buf[((y - y0) * 2 *mask_width) * COLORS]),
-                &(buf[((y - y0 + 1) * 2 *  mask_width - 1) * COLORS]),
-                &(img->data[(y * width + x0) * COLORS]));
+        buf = (unsigned char *) calloc(sizeof(unsigned char), len);
+        for (int i=0; i < TOTAL; i++) {
+            MPI_Recv(&quadrant, 1, MPI_INT, MPI_ANY_SOURCE, 0, comm, &status);
+            //std::cerr << rank << " got: " << quadrant << std::endl;
+            MPI_Recv(buf, len, MPI_CHAR, MPI_ANY_SOURCE, 1, comm, &status);
+            for(unsigned int y = y0; y < y0 + mask_width; y++) {
+                if (quadrant == 0) {
+                    std::copy(
+                        &(buf[((y - y0) * mask_width) * COLORS]),
+                        &(buf[((y - y0 + 1) * mask_width - 1) * COLORS]),
+                        &(img->data[(y * width + x0) * COLORS]));
+                } else if (quadrant == 1) {
+                    std::copy(
+                        &(buf[((y - y0) * mask_width) * COLORS]),
+                        &(buf[((y - y0 + 1) * mask_width - 1) * COLORS]),
+                        &(img->data[((y + mask_width) * width + x0) * COLORS]));
+                } else if (quadrant == 2) {
+                    std::copy(
+                        &(buf[((y - y0) * mask_width) * COLORS]),
+                        &(buf[((y - y0 + 1) * mask_width - 1) * COLORS]),
+                        &(img->data[((y + mask_width) * width + x0 + mask_width) * COLORS]));
+                } else if (quadrant == 3) {
+                    std::copy(
+                        &(buf[((y - y0) * mask_width) * COLORS]),
+                        &(buf[((y - y0 + 1) * mask_width - 1) * COLORS]),
+                        &(img->data[(y * width + x0 + mask_width) * COLORS]));
+                }
+            }
         }
+        free(buf);
         t3 = MPI_Wtime();
         saved = saveBitmap(argv[2], img);
         destroyBitmap(img);
@@ -272,6 +367,7 @@ main(int argc, char** argv) {
                 width * height, t4-t0, t1-t0, t2-t1, t3-t2, t4-t3, gsize);
         }
     }
+
     MPI_Finalize();
     return !saved;
 }
