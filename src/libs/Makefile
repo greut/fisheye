@@ -6,6 +6,11 @@ COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
 LINK.o = $(CC) $(LDFLAGS) $(TARGET_ARCH)
 OUTPUT_OPTION = -o $@
 
+all: lspbmp.o magnify.o
+
+clean:
+	rm -r *.o
+
 %: %.o
 	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) $(OUTPUT_OPTION)
 

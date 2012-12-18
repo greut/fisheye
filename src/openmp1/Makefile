@@ -4,4 +4,4 @@ LDFLAGS = -lgomp -lm
 fisheye: fisheye.o ../libs/lspbmp.o ../libs/magnify.o
 
 clean:
-	rm -f fisheye fisheye.o ../lib/lspbmp.o ../libs/magnify.o
+	rm -f fisheye fisheye.o ../libs/lspbmp.o ../libs/magnify.o
