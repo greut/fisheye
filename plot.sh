@@ -5,8 +5,10 @@ data="data"
 cores=`head -1 $data/openmp0.tsv | awk '{printf $8}'`
 nodes=`head -1 $data/mpi0.tsv | awk '{printf $8}'`
 
+echo "plots/areatime_compute_linear.png"
 gnuplot <<EOF
     set terminal png
+    set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 14
     set output "plots/areatime_compute_linear.png"
     set title "Area vs Computational Time"
     set xlabel "area [$f * pixel^2]"
@@ -26,6 +28,7 @@ EOF
 
 gnuplot <<EOF
     set terminal png
+    set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
     set output "plots/areatime_compute_log.png"
     set title "Area vs Computational Time in Logscale"
     set xlabel "area [log($f * pixel^2)]"
@@ -44,7 +47,8 @@ EOF
 
 gnuplot <<EOF
     set terminal png
-    set output "plots/areatime_compute_linear_with_omp.png"
+    set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
+    set output "plots/areatime_compute_linear_omp.png"
     set title "Area vs Computational Time"
     set xlabel "area [$f * pixel^2]"
     set ylabel "time [sec]"
@@ -58,6 +62,7 @@ EOF
 
 gnuplot <<EOF
     set terminal png
+    set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
     set output "plots/areatime_compute_log_omp.png"
     set title "Area vs Computational Time in Logscale"
     set xlabel "area [log($f * pixel^2)]"
@@ -71,10 +76,40 @@ gnuplot <<EOF
         "$data/openmp1.tsv" u (\$2/$f):(\$5+\$6) every ::2 title "openmp 1 ($cores)" with linespoints
 EOF
 
+gnuplot <<EOF
+    set terminal png
+    set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
+    set output "plots/areatime_total_linear_mpi.png"
+    set title "Area vs Total Time"
+    set xlabel "area [$f * pixel^2]"
+    set ylabel "time [sec]"
+    set key left top
+    set datafile separator "\t"
+    plot "$data/serial4_win.tsv" u (\$2/$f):3 title "serial 4" with linespoints, \\
+        "$data/mpi0.tsv" u (\$2/$f):3 title "mpi 0 ($nodes)" with linespoints, \\
+        "$data/mpi1.tsv" u (\$2/$f):3 title "mpi 1 ($nodes)" with linespoints
+EOF
+
+gnuplot <<EOF
+    set terminal png
+    set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
+    set output "plots/areatime_total_log_mpi.png"
+    set title "Area vs Total Time in Logscale"
+    set xlabel "area [log($f * pixel^2)]"
+    set ylabel "time [log(sec)]"
+    set logscale xy
+    set key left top
+    set datafile separator "\t"
+    plot "$data/serial4_win.tsv" u (\$2/$f):3 every ::2 title "serial 4" with linespoints, \\
+        "$data/mpi0.tsv" u (\$2/$f):3 every ::2 title "mpi 0 ($nodes)" with linespoints, \\
+        "$data/mpi1.tsv" u (\$2/$f):3 every ::2 title "mpi 1 ($nodes)" with linespoints
+EOF
+
 
 
 gnuplot <<EOF
     set terminal png
+    set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
     set output "plots/areatime_total_linear.png"
     set title "Area vs Total Time"
     set xlabel "area [$f * pixel^2]"
@@ -95,6 +130,7 @@ EOF
 
 gnuplot <<EOF
     set terminal png
+    set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
     set output "plots/areatime_total_log.png"
     set title "Area vs Total Time in Logscale"
     set xlabel "area [log($f * pixel^2)]"
