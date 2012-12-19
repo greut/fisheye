@@ -19,14 +19,14 @@ gnuplot <<EOF
     set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
     set output "plots/omp_speedup_total_8000.png"
     set title "Total time speedup on the 8000x8000 picture"
-    set xlabel "nodes"
+    set xlabel "cores"
     set ylabel "speedup"
     set key left top
     set xr [1:8]
     set datafile separator " "
     plot "data/openmp0_all.tsv" u 8:8 title "Serial 5 (ideal)" with linespoints, \\
-         "data/openmp0_all.tsv" u 8:($reftime/\$3) title "openMP 0" with linespoints, \\
-         "data/openmp1_all.tsv" u 8:($reftime/\$3) title "openMP 1" with linespoints
+         "data/openmp0_all.tsv" u 8:($reftime/\$3) title "openmp 0" with linespoints, \\
+         "data/openmp1_all.tsv" u 8:($reftime/\$3) title "openmp 1" with linespoints
 EOF
 
 gnuplot <<EOF
@@ -34,14 +34,14 @@ gnuplot <<EOF
     set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
     set output "plots/omp_speedup_compute_8000.png"
     set title "Comput. time speedup on the 8000x8000 picture"
-    set xlabel "nodes"
+    set xlabel "cores"
     set ylabel "speedup"
     set key left top
     set xr [1:8]
     set datafile separator " "
     plot "data/openmp0_all.tsv" u 8:8 title "Serial 5 (ideal)" with linespoints, \\
-         "data/openmp0_all.tsv" u 8:($reftimeCompute/(\$5+\$6)) title "openMP 0" with linespoints, \\
-         "data/openmp1_all.tsv" u 8:($reftimeCompute/(\$5+\$6)) title "openMP 1" with linespoints
+         "data/openmp0_all.tsv" u 8:($reftimeCompute/(\$5+\$6)) title "openmp 0" with linespoints, \\
+         "data/openmp1_all.tsv" u 8:($reftimeCompute/(\$5+\$6)) title "openmp 1" with linespoints
 EOF
 
 for ver in $versions; do

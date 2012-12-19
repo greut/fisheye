@@ -79,33 +79,31 @@ EOF
 gnuplot <<EOF
     set terminal png
     set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
-    set output "plots/areatime_total_linear_mpi.png"
+    set output "plots/areatime_total_linear_omp.png"
     set title "Area vs Total Time"
     set xlabel "area [$f * pixel^2]"
     set ylabel "time [sec]"
     set key left top
     set datafile separator "\t"
-    plot "$data/serial4_win.tsv" u (\$2/$f):3 title "serial 4" with linespoints, \\
-        "$data/mpi0.tsv" u (\$2/$f):3 title "mpi 0 ($nodes)" with linespoints, \\
-        "$data/mpi1.tsv" u (\$2/$f):3 title "mpi 1 ($nodes)" with linespoints
+    plot "$data/serial5.tsv" u (\$2/$f):3 title "serial 5" with linespoints, \\
+        "$data/openmp0.tsv" u (\$2/$f):3 title "openmp 0 ($cores)" with linespoints, \\
+        "$data/openmp1.tsv" u (\$2/$f):3 title "openmp 1 ($cores)" with linespoints
 EOF
 
 gnuplot <<EOF
     set terminal png
     set term png enhanced font '/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf' 13
-    set output "plots/areatime_total_log_mpi.png"
+    set output "plots/areatime_total_log_omp.png"
     set title "Area vs Total Time in Logscale"
     set xlabel "area [log($f * pixel^2)]"
     set ylabel "time [log(sec)]"
     set logscale xy
     set key left top
     set datafile separator "\t"
-    plot "$data/serial4_win.tsv" u (\$2/$f):3 every ::2 title "serial 4" with linespoints, \\
-        "$data/mpi0.tsv" u (\$2/$f):3 every ::2 title "mpi 0 ($nodes)" with linespoints, \\
-        "$data/mpi1.tsv" u (\$2/$f):3 every ::2 title "mpi 1 ($nodes)" with linespoints
+    plot "$data/serial5.tsv" u (\$2/$f):3 every ::2 title "serial 4" with linespoints, \\
+        "$data/openmp0.tsv" u (\$2/$f):3 every ::2 title "openmp 0 ($cores)" with linespoints, \\
+        "$data/openmp1.tsv" u (\$2/$f):3 every ::2 title "openmp 1 ($cores)" with linespoints
 EOF
-
-
 
 gnuplot <<EOF
     set terminal png
@@ -122,10 +120,7 @@ gnuplot <<EOF
         "$data/serial3.tsv" u (\$2/$f):3 title "serial 3" with linespoints, \\
         "$data/serial4.tsv" u (\$2/$f):3 title "serial 4" with linespoints, \\
         "$data/serial5.tsv" u (\$2/$f):3 title "serial 5" with linespoints, \\
-        "$data/serial6.tsv" u (\$2/$f):3 title "serial 6" with linespoints, \\
-        "$data/openmp0.tsv" u (\$2/$f):3 title "openmp 0 ($cores)" with linespoints, \\
-        "$data/openmp1.tsv" u (\$2/$f):3 title "openmp 1 ($cores)" with linespoints, \\
-        "$data/mpi0.tsv" u (\$2/$f):3 title "mpi 0 ($nodes)" with linespoints
+        "$data/serial6.tsv" u (\$2/$f):3 title "serial 6" with linespoints
 EOF
 
 gnuplot <<EOF
@@ -144,8 +139,5 @@ gnuplot <<EOF
         "$data/serial3.tsv" u (\$2/$f):3 every ::2 title "serial 3" with linespoints, \\
         "$data/serial4.tsv" u (\$2/$f):3 every ::2 title "serial 4" with linespoints, \\
         "$data/serial5.tsv" u (\$2/$f):3 every ::2 title "serial 5" with linespoints, \\
-        "$data/serial6.tsv" u (\$2/$f):3 every ::2 title "serial 6" with linespoints, \\
-        "$data/openmp0.tsv" u (\$2/$f):3 every ::2 title "openmp 0 ($cores)" with linespoints, \\
-        "$data/openmp1.tsv" u (\$2/$f):3 every ::2 title "openmp 1 ($cores)" with linespoints, \\
-        "$data/mpi0.tsv" u (\$2/$f):3 title "mpi 0 ($nodes)" with linespoints
+        "$data/serial6.tsv" u (\$2/$f):3 every ::2 title "serial 6" with linespoints
 EOF
