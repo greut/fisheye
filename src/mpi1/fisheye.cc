@@ -53,16 +53,17 @@ void
 fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     double dx, dy, idx, idy, r0, g0, b0, r1, g1, b1;
     unsigned int nx, ny, mx, my,
-        x = c->x * COLORS,
-        width = img->width * COLORS;
+        x = (int) c->x * COLORS,
+        width = img->width * COLORS,
+		height = img->height;
     unsigned char *data0, *data1, *to, r, g, b;
     double cx = c->x + dv[0],
         cy = c->y + dv[1];
 
-    nx = floor(cx);
-    ny = floor(cy);
-    mx = ceil(cx);
-    my = ceil(cy);
+    nx = (unsigned int) floor(cx);
+    ny = (unsigned int) floor(cy);
+    mx = (unsigned int) ceil(cx);
+    my = (unsigned int) ceil(cy);
     dx = cx - nx;
     dy = cy - ny;
     idx = 1 - dx;
@@ -70,6 +71,13 @@ fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     nx *= COLORS;
     mx *= COLORS;
     // rows
+	// FIXME
+	if (ny == height) {
+		ny--;
+	}
+	if (my == height) {
+		my--;
+	}
     data0 = &(img->data[ny * width]);
     data1 = &(img->data[my * width]);
     to = &(img->data[(int)(c->y * width)]);
@@ -81,9 +89,9 @@ fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     g1 = idx * data1[nx + 1] + dx * data1[mx + 1];
     b1 = idx * data1[nx + 2] + dx * data1[mx + 2];
     // final points
-    r = idy * r0 + dy * r1;
-    g = idy * g0 + dy * g1;
-    b = idy * b0 + dy * b1;
+    r = (unsigned char) (idy * r0 + dy * r1);
+    g = (unsigned char) (idy * g0 + dy * g1);
+    b = (unsigned char) (idy * b0 + dy * b1);
     to[x] = r;
     to[x + 1] = g;
     to[x + 2] = b;
@@ -172,6 +180,7 @@ main(int argc, char** argv) {
         t0 = MPI_Wtime();
         img = loadBitmapHeaderOnly(argv[1]);
         if (img == NULL) {
+			std::cerr << "Cannot open " << argv[1] << std::endl;
             MPI_Abort(comm, 1);
             return 1;
         }
@@ -197,7 +206,7 @@ main(int argc, char** argv) {
             }
         }
 
-        mask_width = ceil(std::min(std::min(width, height)/2., radius));
+        mask_width = (unsigned int) ceil(std::min(std::min(width, height)/2., radius));
         mask_size = mask_width * mask_width << 1;
 
         packsize = 0;
@@ -207,11 +216,11 @@ main(int argc, char** argv) {
         MPI_Pack(&mask_width, 1, MPI_INT, packbuf, LEN, &packsize, comm);
         MPI_Pack(&radius, 1, MPI_DOUBLE, packbuf, LEN, &packsize, comm);
         MPI_Pack(&magnify_factor, 1, MPI_DOUBLE, packbuf, LEN, &packsize, comm);
-    }
+	}
 
     MPI_Bcast(&packsize, 1, MPI_INT, 0, comm);
     MPI_Bcast(packbuf, packsize, MPI_PACKED, 0, comm);
-
+	
     if (rank == 0) {
         Bitmap* img = loadBitmap(argv[1]);
         if (img == NULL) {
@@ -324,10 +333,6 @@ main(int argc, char** argv) {
     if (rank == 0) {
         unsigned char *buffer = (unsigned char *) calloc(sizeof(unsigned char), len);
         for (int i=0; i < TOTAL; i++) {
-            MPI_Wait(&(requests[2*i]), MPI_STATUS_IGNORE);
-            MPI_Wait(&(requests[2*i+1]), MPI_STATUS_IGNORE);
-            free(buf[i]);
-
             MPI_Recv(&(quadrants[i]), 1, MPI_INT, MPI_ANY_SOURCE, 0, comm, &status);
             MPI_Recv(buffer, len, MPI_CHAR, MPI_ANY_SOURCE, 1, comm, &status);
 
@@ -356,6 +361,11 @@ main(int argc, char** argv) {
             }
         }
         free(buffer);
+		for (int i=0; i < TOTAL; i++) {
+            MPI_Wait(&(requests[2*i]), MPI_STATUS_IGNORE);
+            MPI_Wait(&(requests[2*i+1]), MPI_STATUS_IGNORE);
+            free(buf[i]);
+		}
         t3 = MPI_Wtime();
         saved = saveBitmap(argv[2], img);
         destroyBitmap(img);
@@ -364,16 +374,20 @@ main(int argc, char** argv) {
         if (!saved) {
             std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
         } else {
-            printf("%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%d\n", argv[1],
+            char *cout = (char *) calloc(sizeof(char), LEN);
+            cout[LEN-1] = '\0';
+            sprintf(cout, "%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%d", argv[1],
                 width * height, t4-t0, t1-t0, t2-t1, t3-t2, t4-t3, gsize);
+            std::cerr << cout << std::endl;
         }
     }
 
     // Wait and kill everybody!!
     MPI_Barrier(comm);
-    if (rank == 0) {
-        std::cout << "Done! Press Ctrl+C if it doesn't end gracefully" << std::endl;
-    }
+	MPI_Abort(comm, 0);
+    //if (rank == 0) {
+    //    std::cout << "Done! Press Ctrl+C if it doesn't end gracefully" << std::endl;
+    //}
     //MPI_Abort(comm, 0);
     // This could hang!
     MPI_Finalize();

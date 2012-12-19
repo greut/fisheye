@@ -263,18 +263,18 @@ main(int argc, char** argv) {
         } else {
             char *cout = (char *) calloc(sizeof(char), LEN);
             cout[LEN-1] = '\0';
-            sprintf(cout, "%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%d\n", argv[1],
+            sprintf(cout, "%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%d", argv[1],
                 width * height, t4-t0, t1-t0, t2-t1, t3-t2, t4-t3, gsize);
-            std::cout << cout << std::endl;
+            std::cerr << cout << std::endl;
         }
     }
     // Wait and kill everybody!!
     MPI_Barrier(comm);
-    if (rank == 0) {
-        std::cout << "Done! Press Ctrl+C if it doesn't end gracefully" << std::endl;
-    }
-    //MPI_Abort(comm, 0);
+	MPI_Abort(comm, 0);
+    //if (rank == 0) {
+    //    std::cerr << "Done! Press Ctrl+C if it doesn't end gracefully" << std::endl;
+    //}
     // This could hang!
-    MPI_Finalize();
+    //MPI_Finalize();
     return !saved;
 }
