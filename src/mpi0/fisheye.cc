@@ -274,7 +274,7 @@ main(int argc, char** argv) {
         std::cout << "Done! Press Ctrl+C if it doesn't end gracefully" << std::endl;
     }
     //MPI_Abort(comm, 0);
-    // This would hang!
+    // This could hang!
     MPI_Finalize();
     return !saved;
 }
