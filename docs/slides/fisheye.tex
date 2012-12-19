@@ -6,6 +6,7 @@
 \usepackage{sslides}
 \usepackage{graphicx}
 \usepackage{verbatim}
+\usepackage{textcomp}
 \usepackage{mathptmx} % Times
 \usepackage[scaled=.90]{helvet}
 \usepackage{courier}
@@ -73,6 +74,7 @@
 \includegraphics{../figures/serial.png}
 \end{center}
 
+\begin{comment}
 \section{}
 \vspace{3cm}
 \begin{shadequote}
@@ -80,6 +82,7 @@
     algorithm)} \\
     \large ---Vincent Keller
 \end{shadequote}
+\end{comment}
 
 \section{Serial versions}
 
@@ -119,28 +122,25 @@
 \vspace{3cm}
 \small Picture used: 8000x8000 24bits BMP, \url{http://flic.kr/p/binsBK}
 
-\section{Amdahl's law}
+\section{MPI 0}
 
-Shared memory (OpenMP), on BC machines:
+Distributed lens \textbf{computation}.
 
-$$f = \frac{0.2}{9.4} = 0.02$$
-$$S_p \le \frac{1}{f + \frac{1 - f}{p}} = \frac{1}{0.02 + \frac{0.98}{p}}$$
+\begin{center}
+\includegraphics[width=.8\textwidth]{../figures/mpi0.png}
+\end{center}
 
-\begin{comment}
+\section{MPI 1}
+
+Distributed lens \textbf{application}
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../figures/mpi1.png}
+\end{center}
+
 \section{Computation/communication}
 
-Amount of computation ($n$: # of pixels):
-\begin{itemize}
-    \item the lens, at most $\frac{1}{4}n$.
-    \item applying the lens $4n$.
-\end{itemize}
-
-Amount of communication:
-\begin{itemize}
-    \item 
-\end{itemize}
-
-Windows + MPI:
+MPI, on INF2 machines:
 \begin{itemize}
     \item Lens size: $3600^2 \cdot 2 = 24 MB$
     \item Picture size:  $7200^2 \cdot 3 = 148 MB$
@@ -152,25 +152,6 @@ Windows + MPI:
 $$Ratio = \frac{18}{17.7} \simeq 1$$
 
 \small Measured bandwidth in INF3: $9.7MB/s$, latency: $5.75ms$
-\end{comment}
-
-\section{OpenMP}
-
-\begin{itemize}
-    \item \textbf{OpenMP 0} parallel loading and lens computation
-    \item \textbf{OpenMP 1} parallel lens comput. and application
-\end{itemize}
-
-\begin{center}
-    \begin{minipage}[b]{0.45\linewidth}
-        \includegraphics[width=\textwidth]{../../plots/areatime_total_linear_omp.png}
-    \end{minipage}
-    \begin{minipage}[b]{0.45\linewidth}
-        \includegraphics[width=\textwidth]{../../plots/omp_speedup_total_8000.png}
-    \end{minipage}
-\end{center}
-
-\small Running on BC 07 machines.
 
 \section{MPI}
 
@@ -190,27 +171,47 @@ $$Ratio = \frac{18}{17.7} \simeq 1$$
 
 \small Running on INF 2 machines.
 
-\section{MPI 0}
+\section{Amdahl's law}
 
-Distributed lens computation.
+Shared memory (OpenMP), on BC machines:
+
+$$f = \frac{0.2}{9.4} = 0.02$$
+$$S_p \le \frac{1}{f + \frac{1 - f}{p}} = \frac{1}{0.02 + \frac{0.98}{p}}$$
+
+\section{OpenMP}
+
+\begin{itemize}
+    \item \textbf{OpenMP 0} parallel loading and lens computation
+    \item \textbf{OpenMP 1} parallel lens comput. and application
+\end{itemize}
 
 \begin{center}
-\includegraphics[width=.8\textwidth]{../figures/mpi0.png}
+    \begin{minipage}[b]{0.45\linewidth}
+        \includegraphics[width=\textwidth]{../../plots/areatime_total_linear_omp.png}
+    \end{minipage}
+    \begin{minipage}[b]{0.45\linewidth}
+        \includegraphics[width=\textwidth]{../../plots/omp_speedup_total_8000.png}
+    \end{minipage}
 \end{center}
 
-\section{MPI 1}
+\small Running on BC 07 machines.
 
-Distributed lens application
+\section{Conclusion \& Future plans}
 
-\begin{center}
-\includegraphics[width=.8\textwidth]{../figures/mpi1.png}
-\end{center}
-
+\begin{itemize}
+    \item \textbf{I/O} is hard.
+    \item Investigate \textbf{MPI\_File}.
+    \item MPI version able to split the picture into 8 (or more) slices.
+\end{itemize}
 
 \section{Fin}
 \vspace{4cm}
 \begin{center}
-\emph{Danke sehr, Merci, Grazie… \\ $* * *$ \\ …and Merry Holidays!}
+\emph{Danke sehr, Merci, Grazie…}
+
+\textasteriskcentered \textasteriskcentered \textasteriskcentered
+
+\emph{…and Merry Holidays!}
 \end{center}
 
 \end{document}
