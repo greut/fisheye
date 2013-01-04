@@ -90,3 +90,9 @@ The image is slit in 4 parts (8 being slightly harder).
 Combination of MPI 0 and MPI 1.
 
 The calculation of the mask and the computation are shared by the nodes.
+
+### MPI 3
+
+From scratch (Serial 0).
+
+Cut everything into pieces, don't care about the I/O time.
