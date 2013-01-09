@@ -91,3 +91,10 @@ From scratch (Serial 0).
 
 Cut everything into horizontal chunks, each node computes one and the node 0
 combines them all.
+
+### MPI 3
+
+Built from MPI 2.
+
+Uses the fact that the picture is lens if symmetrical to have 2 chunks per
+node. 0 will compute the top and bottom ones.
