@@ -270,7 +270,7 @@ main(int argc, char** argv) {
     }
     // Wait and kill everybody!!
     MPI_Barrier(comm);
-	MPI_Abort(comm, 0);
+    MPI_Abort(comm, 0);
     //if (rank == 0) {
     //    std::cerr << "Done! Press Ctrl+C if it doesn't end gracefully" << std::endl;
     //}

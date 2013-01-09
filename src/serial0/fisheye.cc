@@ -106,7 +106,7 @@ main(int argc, const char** argv) {
     }
     fisheye(dst, src, radius, magnify_factor);
     clock_t t2 = clock();
-    clock_t saved = saveBitmap(argv[2], dst);
+    int saved = saveBitmap(argv[2], dst);
     destroyBitmap(src);
     destroyBitmap(dst);
     clock_t t3 = clock();
@@ -121,5 +121,5 @@ main(int argc, const char** argv) {
         std::cout << double(t2-t1)/CLOCKS_PER_SEC << "\t\t";
         std::cout << double(t3-t2)/CLOCKS_PER_SEC << std::endl;
     }
-    return saved;
+    return !saved;
 }

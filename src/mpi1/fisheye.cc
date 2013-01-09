@@ -55,7 +55,7 @@ fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     unsigned int nx, ny, mx, my,
         x = (int) c->x * COLORS,
         width = img->width * COLORS,
-		height = img->height;
+        height = img->height;
     unsigned char *data0, *data1, *to, r, g, b;
     double cx = c->x + dv[0],
         cy = c->y + dv[1];
@@ -71,13 +71,13 @@ fisheye_inplace_sub(Bitmap* img, const point_t *c, const double* dv) {
     nx *= COLORS;
     mx *= COLORS;
     // rows
-	// FIXME
-	if (ny == height) {
-		ny--;
-	}
-	if (my == height) {
-		my--;
-	}
+    // FIXME
+    if (ny == height) {
+        ny--;
+    }
+    if (my == height) {
+        my--;
+    }
     data0 = &(img->data[ny * width]);
     data1 = &(img->data[my * width]);
     to = &(img->data[(int)(c->y * width)]);
@@ -180,7 +180,7 @@ main(int argc, char** argv) {
         t0 = MPI_Wtime();
         img = loadBitmapHeaderOnly(argv[1]);
         if (img == NULL) {
-			std::cerr << "Cannot open " << argv[1] << std::endl;
+            std::cerr << "Cannot open " << argv[1] << std::endl;
             MPI_Abort(comm, 1);
             return 1;
         }
@@ -216,11 +216,11 @@ main(int argc, char** argv) {
         MPI_Pack(&mask_width, 1, MPI_INT, packbuf, LEN, &packsize, comm);
         MPI_Pack(&radius, 1, MPI_DOUBLE, packbuf, LEN, &packsize, comm);
         MPI_Pack(&magnify_factor, 1, MPI_DOUBLE, packbuf, LEN, &packsize, comm);
-	}
+    }
 
     MPI_Bcast(&packsize, 1, MPI_INT, 0, comm);
     MPI_Bcast(packbuf, packsize, MPI_PACKED, 0, comm);
-	
+
     if (rank == 0) {
         Bitmap* img = loadBitmap(argv[1]);
         if (img == NULL) {
@@ -361,11 +361,11 @@ main(int argc, char** argv) {
             }
         }
         free(buffer);
-		for (int i=0; i < TOTAL; i++) {
+        for (int i=0; i < TOTAL; i++) {
             MPI_Wait(&(requests[2*i]), MPI_STATUS_IGNORE);
             MPI_Wait(&(requests[2*i+1]), MPI_STATUS_IGNORE);
             free(buf[i]);
-		}
+        }
         t3 = MPI_Wtime();
         saved = saveBitmap(argv[2], img);
         destroyBitmap(img);
@@ -384,7 +384,7 @@ main(int argc, char** argv) {
 
     // Wait and kill everybody!!
     MPI_Barrier(comm);
-	MPI_Abort(comm, 0);
+    MPI_Abort(comm, 0);
     //if (rank == 0) {
     //    std::cout << "Done! Press Ctrl+C if it doesn't end gracefully" << std::endl;
     //}
