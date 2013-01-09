@@ -38,7 +38,7 @@ for i in `seq 0 1`; do
     echo ""
 done
 
-for i in `seq 0 1`; do
+for i in `seq 0 3`; do
     echo MPI $i
     echo "------"
     d=src/mpi$i
@@ -47,7 +47,7 @@ for i in `seq 0 1`; do
     rm -f $tsv
     for img in $IMAGES; do
         echo " $img"
-        time `mpiexec -mapall -n 3 -machinefile machines.txt $d/fisheye img/$img $TMP >> $tsv`
+        time `mpiexec -n 4 $d/fisheye img/$img $TMP 2>> $tsv`
         rm -f $TMP
         echo ""
         echo ""

@@ -135,19 +135,20 @@ main(int argc, char** argv) {
     t2 = MPI_Wtime();
 
     if (rank == 0) {
-        unsigned int r, copy_size, full_size = width * COLORS * height;
+        unsigned int r, copy_size, last = gsize - 1,
+            full_size = width * COLORS * height;
         for (int i=1; i<gsize; i++) {
             MPI_Recv(chunk, chunk_size, MPI_CHAR, MPI_ANY_SOURCE, 0, comm, &status);
             r = status.MPI_SOURCE;
             // The last chunk might be smaller.
             copy_size = chunk_size;
-            if (full_size < (r + 1) * chunk_size) {
-                copy_size -= (r + 1) * full_size;
+            if (r == last) {
+                copy_size -= gsize * chunk_size - full_size;
             }
             std::copy(
                 chunk,
                 chunk + copy_size,
-                &(dst->data[std::min(full_size, r * chunk_size)]));
+                dst->data + r * chunk_size);
         }
         free(chunk);
         if (dst == NULL) {
@@ -161,7 +162,7 @@ main(int argc, char** argv) {
         destroyBitmap(src);
         destroyBitmap(dst);
         t4 = MPI_Wtime();
-        
+
         if (!saved) {
             std::cerr << "The picture could not be saved to " << argv[2] << std::endl;
         } else {

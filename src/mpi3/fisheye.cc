@@ -180,7 +180,6 @@ main(int argc, char** argv) {
     if (rank > 0) {
         fisheye_chunk(chunk, src, radius, magnify_factor, rank, chunk_height);
         MPI_Send(chunk, chunk_size, MPI_CHAR, 0, 0, comm);
-        free(chunk);
     } else {
         dst = createBitmap(width, height, 24);
         fisheye_chunk(dst->data, src, radius, magnify_factor, rank, chunk_height);
@@ -218,7 +217,6 @@ main(int argc, char** argv) {
                 chunk + chunk_size,
                 dst->data + (height - (r * chunk_height)) * COLORS * width - copy_size);
         }
-        free(chunk);
         if (dst == NULL) {
             std::cerr << "Cannot allocate destination picture " << argv[2] << std::endl;
             free(src);
@@ -244,6 +242,8 @@ main(int argc, char** argv) {
     } else {
         destroyBitmap(src);
     }
+
+    free(chunk);
     MPI_Finalize();
     return !saved;
 }
