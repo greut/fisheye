@@ -87,12 +87,7 @@ The image is slit in 4 parts (8 being slightly harder).
 
 ### MPI 2
 
-Combination of MPI 0 and MPI 1.
-
-The calculation of the mask and the computation are shared by the nodes.
-
-### MPI 3
-
 From scratch (Serial 0).
 
-Cut everything into pieces, don't care about the I/O time.
+Cut everything into horizontal chunks, each node computes one and the node 0
+combines them all.

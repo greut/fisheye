@@ -1,0 +1,3 @@
+@echo off
+rm *.obj *.exe
+%comspec% /c ""%VS80COMNTOOLS%\vsvars32.bat" && cl.exe /nologo /errorReport:prompt  /GF /FD /EHsc /MT /Gy /W3 /Wp64 /Zi /TP /D "_VC80_UPGRADE=0x0710" /D "_CRT_SECURE_NO_WARNINGS" /D "_SCL_SECURE_NO_WARNINGS" /D "_MBCS" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /MT /I "C:\Program Files\MPICH2\include" /I "..\libs" fisheye.cc ..\libs\lspbmp.c ..\libs\magnify.c /link mpi.lib /subsystem:console /libpath:"C:\Program Files\MPICH2\lib""
