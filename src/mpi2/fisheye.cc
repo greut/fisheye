@@ -113,6 +113,7 @@ main(int argc, char** argv) {
             return 1;
         }
     }
+    // End of configuration
 
     unsigned int chunk_height = (unsigned int) ceil(height / (double) gsize),
         chunk_size = width * COLORS * chunk_height;
@@ -123,6 +124,8 @@ main(int argc, char** argv) {
         return 1;
     }
 
+    // Wait for all the participants to be ready computing.
+    MPI_Barrier(comm);
     t1 = MPI_Wtime();
     if (rank > 0) {
         fisheye_chunk(chunk, src, radius, magnify_factor, rank, chunk_height);
