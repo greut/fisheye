@@ -34,8 +34,8 @@ fisheye_chunk(unsigned char* dst, const Bitmap* src, double radius, double m, un
             if (p->r < radius) {
                 polar_t *np = unmagnify(p, radius, m);
                 point_t *nc = geometry_point_from_polar(&geometry, np);
-                nx = floor(nc->x);
-                ny = floor(nc->y);
+                nx = (unsigned int) floor(nc->x);
+                ny = (unsigned int) floor(nc->y);
                 dx = nc->x - nx;
                 dy = nc->y - ny;
                 nx *= COLORS;
@@ -53,9 +53,9 @@ fisheye_chunk(unsigned char* dst, const Bitmap* src, double radius, double m, un
                 r = (1 - dy) * r0 + dy * r1;
                 g = (1 - dy) * g0 + dy * g1;
                 b = (1 - dy) * b0 + dy * b1;
-                to[x] = r;
-                to[x+1] = g;
-                to[x+2] = b;
+                to[x] = (unsigned char) r;
+                to[x+1] = (unsigned char) g;
+                to[x+2] = (unsigned char) b;
                 free(nc);
                 free(np);
             } else {
@@ -130,7 +130,6 @@ main(int argc, char** argv) {
     if (rank > 0) {
         fisheye_chunk(chunk, src, radius, magnify_factor, rank, chunk_height);
         MPI_Send(chunk, chunk_size, MPI_CHAR, 0, 0, comm);
-        free(chunk);
     } else {
         dst = createBitmap(width, height, 24);
         fisheye_chunk(dst->data, src, radius, magnify_factor, rank, chunk_height);
@@ -153,7 +152,6 @@ main(int argc, char** argv) {
                 chunk + copy_size,
                 dst->data + r * chunk_size);
         }
-        free(chunk);
         if (dst == NULL) {
             std::cerr << "Cannot allocate destination picture " << argv[2] << std::endl;
             free(src);
@@ -179,6 +177,11 @@ main(int argc, char** argv) {
     } else {
         destroyBitmap(src);
     }
+    free(chunk);
+    // Wait and kill everybody!!
+    MPI_Barrier(comm);
+    MPI_Abort(comm, 0);
+	// This would hang...
     MPI_Finalize();
     return !saved;
 }

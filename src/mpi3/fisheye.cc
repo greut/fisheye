@@ -25,9 +25,9 @@ bilinear_interpolation(unsigned char *to, const unsigned char *data0, const unsi
     r = (1 - dy) * r0 + dy * r1;
     g = (1 - dy) * g0 + dy * g1;
     b = (1 - dy) * b0 + dy * b1;
-    to[x] = r;
-    to[x+1] = g;
-    to[x+2] = b;
+    to[x] = (unsigned char) r;
+    to[x+1] = (unsigned char) g;
+    to[x+2] = (unsigned char) b;
 }
 
 static void
@@ -62,8 +62,8 @@ fisheye_chunk(unsigned char* dst, const Bitmap* src, double radius, double m, un
 
                 // Top
                 // Left
-                nx = floor(nc->x);
-                ny = floor(nc->y);
+                nx = (unsigned int) floor(nc->x);
+                ny = (unsigned int) floor(nc->y);
                 dx = nc->x - nx;
                 dy = nc->y - ny;
                 nx *= COLORS;
@@ -72,14 +72,14 @@ fisheye_chunk(unsigned char* dst, const Bitmap* src, double radius, double m, un
                 data1 = &(src->data[(ny + 1) * width]);
                 bilinear_interpolation(to_t, data0, data1, x, nx, dx, dy);
                 // Right
-                nx = ceil(nc->x);
+                nx = (unsigned int) ceil(nc->x);
                 dx = nx - nc->x;
                 nx *= COLORS;
                 bilinear_interpolation(to_t, data0, data1, rx, nx, 1-dx, dy);
 
                 // Bottom (horizontal mirror)
-                nx = floor(nc->x);
-                ny = ceil(nc->y);
+                nx = (unsigned int) floor(nc->x);
+                ny = (unsigned int) ceil(nc->y);
                 dx = nc->x - nx;
                 dy = ny - nc->y;
                 nx *= COLORS;
@@ -89,7 +89,7 @@ fisheye_chunk(unsigned char* dst, const Bitmap* src, double radius, double m, un
                 bilinear_interpolation(to_b, data0, data1, x, nx, dx, dy);
 
                 // Right
-                nx = ceil(nc->x);
+                nx = (unsigned int) ceil(nc->x);
                 dx = nx - nc->x;
                 nx *= COLORS;
                 bilinear_interpolation(to_b, data0, data1, rx, nx, 1-dx, dy);
@@ -244,8 +244,11 @@ main(int argc, char** argv) {
     } else {
         destroyBitmap(src);
     }
-
     free(chunk);
+    // Wait and kill everybody!!
+    MPI_Barrier(comm);
+    MPI_Abort(comm, 0);
+	// This would hang...
     MPI_Finalize();
     return !saved;
 }

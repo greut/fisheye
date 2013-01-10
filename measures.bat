@@ -1,4 +1,7 @@
 @echo off
+rem 5 nodes
+set N=5
+
 cd src\serial4
 call build.bat
 cd ..\..
@@ -29,3 +32,17 @@ call measure.bat 1 img\1000x1000@24.bmp
 call measure.bat 1 img\2000x2000@24.bmp
 call measure.bat 1 img\4000x4000@24.bmp
 call measure.bat 1 img\8000x8000@24.bmp
+
+call measure.bat 2 img\100x100@24.bmp true
+call measure.bat 2 img\300x300@24.bmp
+call measure.bat 2 img\1000x1000@24.bmp
+call measure.bat 2 img\2000x2000@24.bmp
+call measure.bat 2 img\4000x4000@24.bmp
+call measure.bat 2 img\8000x8000@24.bmp
+
+call measure.bat 3 img\100x100@24.bmp true
+call measure.bat 3 img\300x300@24.bmp
+call measure.bat 3 img\1000x1000@24.bmp
+call measure.bat 3 img\2000x2000@24.bmp
+call measure.bat 3 img\4000x4000@24.bmp
+call measure.bat 3 img\8000x8000@24.bmp
