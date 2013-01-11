@@ -1,4 +1,6 @@
 @echo off
+rem replace measure_mpi by measure_mpi_same for relative values.
+
 call measure_mpi.bat 0 2 img\100x100@24.bmp true
 call measure_mpi.bat 0 2 img\300x300@24.bmp
 call measure_mpi.bat 0 2 img\1000x1000@24.bmp
