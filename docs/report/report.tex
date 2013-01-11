@@ -5,7 +5,7 @@
     \Large Fish-eye transformation with bilinear interpolation \\
     \large CS-425 Program parallelization on PC clusters}
 \author{
-    Yoan Blanc \texttt{yoan.blanc@epfl.ch}
+    Yoan Blanc ~\texttt{yoan.blanc@epfl.ch}
 }
 \date{\today}
 
@@ -39,8 +39,6 @@
 \begin{document}
 \maketitle
 
-\section{Abstract}
-\textbf{TODO}
 
 \section{Description}
 % A brief description of the application and its computational complexity
@@ -182,9 +180,9 @@ totally parallelized.
 
 A speedup can only be achieved if the size of the data to send over the wire is
 takes less time to send than to compute. The timing diagram (see: \emph{Figure
-\ref{fig:mpi}}) assumes that and also assumes that the recieving time outgrows
+\ref{fig:mpi}}) assumes that and also assumes that the receiving time outgrows
 the time to copy the data back into the destination file so this operation can
-be done will more data is recieved (by buffering).
+be done will more data is received (by buffering).
 
 \begin{figure}[h]
     \centering
@@ -322,7 +320,9 @@ have an impact on the shared memory solution.
     \item \textbf{Serial 6} ~(memory, I/O)\\
     \emph{Serial 4} + Copying the source file to destination using
     \texttt{sendfile} (\verb|SENDFILE(2)|), working in place and using
-    \texttt{mmap} \end{itemize}.
+    \texttt{mmap}
+
+\end{itemize}.
 
 \subsubsection{Serial 0}
 
@@ -336,22 +336,22 @@ each pixel. The fisheye mask as a central symmetry. So it exploits it to only
 calculate the top left quarter of the picture and then transpose it to the $3$
 others. Now while building the destination picture, the source pixel is
 obtained by using the mask (the solid arrow) instead of calculating everything
-(the dashed arrow).  The billinear interpolation (the dotted arrow) still needs
+(the dashed arrow).  The bilinear interpolation (the dotted arrow) still needs
 to be done since there are no assumed symmetric in the source picture.
 
 \subsubsection{Serial 2}
 
 It’s building upon \emph{Serial 1}, with a little improvement. The mask is not
 only symmetrical in $4$ but in $8$ as well easily if the mask is a square. And
-as everything outside the fisheye lense is set to null, it’s simply wasted
+as everything outside the fisheye lens is set to null, it's simply wasted
 space. In face, the mask is infinity-symmetrical but it gets tricky in
-cartesian coordinates (but doable still if the mask’s size are okay). Here it
+cartesian coordinates (but doable still if the mask's size are okay). Here it
 does less calculation and uses less storage for the mask.
 
 \subsubsection{Serial 3}
 
 Building from \emph{Serial 2}, it removes the need of having a source and a
-destination and works in the source data directly. It wasn’t possible because
+destination and works in the source data directly. It wasn't possible because
 while read from top to bottom and left to right, everything but the top left
 corner will modify data it’ll read later on. The algorithm here will act
 differently for each quarter of the output picture. And other gain, everything
@@ -381,8 +381,10 @@ It doesn't seem to bring much on the speed side. Memory wise it has only the
 lens (on the heap) and the destination picture loaded.
 
 \subsection{MPI versions}
-Three versions has been made, the first two ones ($0$ and $1$) were done before
-the project presentation and thus tried to minimized load time as well.
+
+Four versions has been made, the first two ones ($0$ and $1$) were done before
+the project presentation and thus tried to minimized load time as well. The
+two last ones, don't consider \emph{input/output} time.
 
 \subsubsection{MPI 0}
 
@@ -391,7 +393,7 @@ This version parallelize the lens pre-computation with the source image opening.
 \subsubsection{MPI 1}
 
 This second version opens the source file at the root node, sends it to the all
-the workers in chunks (the 4 quadrants) while they all are pre-computing the
+the workers in chunks (the $4$ quadrants) while they all are pre-computing the
 lens.
 
 The picture is send two times (back and forth) over the network which is less
@@ -401,7 +403,46 @@ than optimal.
 
 This version is very implementation of the algorithm described in the analysis
 part. The source picture is opened by each node, they all compute one chunk of
-the final picture and send it to the main node.
+the final picture and send it to the main node. The node $i$ (of $n$) will
+compute $l = \lceil{}\frac{height}{n}\rceil{}$ lines starting at the $i \cdot
+l$ line.
+
+\subsubsection{MPI 3}
+
+This is an improvement of \emph{MPI 3} that leverage the symmetry of the
+problem by reusing the calculation of one pixel to the three other quadrants.
+Each node compute a chunk of the top half and the corresponding bottom half one.
+I.e., the node $0$ will compute the first $\frac{height}{2 n}$ lines as well as
+the last $\frac{height}{2 n}$ lines, doing so, it can reuse the computation
+made for the pixel of the top left hand corner to do the bilinear interpolation
+of the ones from the top right hand, bottom left hand and bottom right hand
+corners directly. In the end, it's the same enhancement made for the shared
+memory version but without storing any precomputed values (as they are used
+directly).
+
+This modification has two good parts:
+
+\begin{itemize}
+    \item The lens computation part is reduced by a factor $4$. This one
+    contains costly geometrical operations ($sin$, $cos$, $sqrt$, $\ldots$)
+    compared to the bilinear interpolation which is additions and
+    multiplications.
+
+    \item The chunks have different complexities, therefore time to complete,
+    because of the lens geometry. Considering its top half (or top left
+    quadrant), there is much less pixels affected by the lens (as long as the
+    lens isn't as big as the picture itself) on the top chunks (of equal
+    height) than at the bottom ones. Hence, the nodes computing them, will be
+    faster at starting sending those and it will provide some kind of natural
+    ordering of the nodes: the one with the least work will be assembling the
+    picture and each node will be able to use the time required to assemble
+    the chunks of its predecessors to do its computation.
+
+    It's a matter of sending communication time in the end, but this way, we
+    managed to reduce the computation time of the root node as well as the
+    one of the second one so the scheduling is not like in the analysis in
+    optimal cases.
+\end{itemize}
 
 \subsection{OpenMP versions}
 
@@ -426,10 +467,145 @@ and the lens application are done in parallel dynamic schedules.
 % compare practical results for different types of sizes of inputs, the impact
 % of the different optimizations, etc.
 
-\section{Conclusion}
-\textbf{TODO}
+\subsection{Serial algorithms}
 
-%\bibliographystyle{unsrt}
-%\bibliography{report}
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=.45\linewidth]{../../plots/areatime_compute_log.png}
+\includegraphics[width=.45\linewidth]{../../plots/areatime_total_log.png}
+\end{center}
+\caption{Serial: computational and total time}{The pictures (from left to
+right) show how the time scale with the problem size (the number of pixels).}
+\label{fig:serials}
+\end{figure}
+
+We see (\textbf{figure \ref{fig:serials}}) how the serial version are scaling
+along with their problem size which matches the description of the algorithm.
+It's a linear algorithm.
+
+\subsection{Message passing ~(MPI)}
+
+\subsubsection{Absolute time}
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=.45\linewidth]{../../plots/mpi_speedup_compute_8000.png}
+\includegraphics[width=.45\linewidth]{../../plots/mpi_speedup_compute_8000_no_ideal.png}
+\end{center}
+\caption{MPI: absolute speed ups}{Both pictures show the speed-up against the
+\emph{Serial 4} version, the right one is the zoom using a different $y$ scale.}
+\label{fig:mpis}
+\end{figure}
+
+The speed ups (\textbf{figure \ref{fig:mpis}}) for the MPI versions are quite
+interesting. \emph{MPI 0} and \emph{MPI 1} are only here to see how they
+compare but won't be discussed since they were built with \emph{input/output}
+in mind and that was not required. \emph{MPI 2} and \emph{MPI 3} manage to
+scale with the kind of progression that was predicted, but way bellow the
+prediction though. As reminder here was the prediction:
+
+$$speedup(n) = \frac{1.2}{1 + \frac{0.2}{n}}$$
+
+Hypothesises:
+
+\begin{enumerate}
+    \item \textbf{\emph{Serial} 4 is way better than the algorithms used here}  \\
+
+    \emph{MPI 3} does a bit more computation than \emph{Serial 4} where only
+    $\frac{1}{8}$ of the lens and not $\frac{1}{4}$ of the source picture goes
+    through the polar coordinate transformation. But that should only impact
+    for the first chunks computational time as the networking is hitting the
+    others.
+
+    \item \textbf{Copying takes time} \\
+
+    This algorithm deals with a lot of data and must copy that data around from
+    the buffer that received it to the buffer that represents the destination
+    picture for each received chunks. This operation wasn't be taken into
+    account in the initial prediction, just like if it was neglectable.
+
+    \item \textbf{Memory bandwidth becomes the limitation} \\
+
+    While the copying operation is happening, \emph{MPI} might be receiving
+    data from other nodes. So a copy operation may be sharing the memory
+    bandwidth with the currently sending nodes, reducing the throughput it has.
+
+\end{enumerate}
+
+Even if the algorithm is not as efficient as the reference one, it only affects
+the first couple of nodes (that are expected to send data as early as possible).
+The second hypothesis seems more likely. We should correct the model by adding
+a \emph{copying time} factor as the communication time is not all.
+
+Copying the $8000 \times 8000$ file in memory takes: $0.2 sec$ (on the INF2
+machines).
+
+Compared to the communication time, it's not very significant and won't
+influence a lot. It cannot explain the initial drop for the $2$ nodes solution.
+
+Conclusion, the parallelized algorithm is not as good as the reference one.
+The predictions are made harder by taking a good serial algorithm that works
+differently than the one parallelized. (I'm pretty sure it's a mistake though).
+
+\subsubsection{Relative time}
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=.45\linewidth]{../../plots/mpi_speedup_compute_8000_relative.png}
+\includegraphics[width=.45\linewidth]{../../plots/mpi_speedup_compute_8000_no_ideal_relative.png}
+\end{center}
+\caption{MPI: relative speed ups}{Both pictures show the speed-up against the
+\emph{Serial 4} version, the right one is the zoom using a different $y$ scale.}
+\label{fig:mpis-rel}
+\end{figure}
+
+The \textbf{figure \ref{fig:mpis-rel}} doesn't make much sense. Opening a lot
+of times the same big file in memory could force the machine to swap and thus
+behave in a hardly predictable way.
+
+\subsection{Shared memory ~(OpenMP)}
+
+\begin{figure}[ht]
+    \begin{center}
+        \includegraphics[width=.45\linewidth]{../../plots/areatime_compute_log_omp.png}
+        \includegraphics[width=.45\linewidth]{../../plots/omp_speedup_compute_8000.png}
+    \end{center}
+    \caption{OpenMP: time and speed up}{The left picture shows how the problem
+    are scaling with the problem size, linearly with the size of the problem.
+    And the right picture, the measured speed-up on a BC machine.}
+    \label{fig:omp}
+\end{figure}
+
+We see in the \textbf{figure \ref{fig:omp}} that the \emph{OpenMP 0} version
+doesn't work because there is no gains to be made during the reading of the
+source picture. On the other hand \emph{OpenMP 1} speeds up pretty well.
+
+Because \emph{OpenMP 0} was a failure, I didn't go doing a mix of the two. Also
+the feedback I've gotten from the presentation pointed that \emph{input/output}
+wasn't part of the things to measure. It was interesting still to get to hit the
+point where the memory bandwidth is the limitation.
+
+Regarding \emph{OpenMP 1}, we can see that the \emph{Hyperthreading} (8 virtual
+cores of 4 real dual cores) starts preventing it from scaling as well starting
+after 4 nodes.
+
+
+\section{Conclusion}
+
+As said during the presentation, I've spent many energy on deal correctly and
+efficiently with \emph{input/output} time. This is an interesting field to
+explore, to come with solutions but wasn't really the point of the project.
+Just like memory consumption wasn't part of it. I realized that considering
+all those dimensions give this problem too many dimensions and depth to deal
+with. It's an easy problem and I managed to find more problems than it was
+necessary, putting time into useless things rather than sticking to the given
+and yet simple plan.
+
+I've really enjoyed being able to work with bare \emph{MPI}, it gives some key
+tool to better understand how \emph{DPS} is architectured. I'd really have
+enjoyed getting to know it a little bit sooner rather than having to apply
+recipes using \emph{DPS}. It would give a better understanding on where what
+is easily manable with \emph{MPI} stops and where more complete abstractions
+(like \emph{DPS}) start.
 
 \end{document}
